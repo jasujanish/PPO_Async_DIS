@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opsd"
+version = "0.1.0"
+description = "Prepare proved theorems from the Lean-Workbook dataset."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "certifi>=2024.8.30",
+  "datasets>=4.4,<5",
+  "modal>=1.4,<2",
+]
+
+[project.scripts]
+prepare-lean-workbook = "opsd.prepare_dataset:main"
+prepare-eval-datasets = "opsd.prepare_eval_datasets:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8,<10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opsd"]
