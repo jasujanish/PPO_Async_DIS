@@ -1,130 +1,207 @@
-# OPSD
+# PPO_ASYNC
 
-## Research idea
+PPO_ASYNC compares three reinforcement-learning systems for Lean 4 theorem
+proving with `Qwen/Qwen3.5-4B`:
 
-- One major issue with OPD is teacher-student mismatch If the teacher is much stronger than the student, teacher's reasoning traces have little overlap with the student's reasoning traces, so teacher capabilities fail to distill into the student.
-- In SAO, DIS zeros gradeints when the ratio between the current policy and rollout policy is too extreme.
-- What if we used a DIS inspired clipping to reduce insability in OPD?
-- I don't have all the details worked out yet, but I find this interesting.
-- We could also try this in OPSD.
+1. synchronous, on-policy PPO;
+2. asynchronous PPO with continuously replenished SGLang rollouts;
+3. the same asynchronous PPO system with Direct Double-Sided Importance
+   Sampling (DIS).
 
-## Dataset preparation
+The implementation uses pinned SLIME v0.3.2 and SGLang. It is a true
+four-GPU system on one Modal node:
 
-This project prepares the
-[`internlm/Lean-Workbook`](https://huggingface.co/datasets/internlm/Lean-Workbook)
-dataset for downstream work. It keeps every source column but retains only rows
-whose `status` is exactly `proved`.
+| Physical GPU | Role |
+| --- | --- |
+| H100 0 | actor/learner |
+| H100 1 | critic |
+| H100 2 | SGLang rollout engine 0 |
+| H100 3 | SGLang rollout engine 1 |
 
-## Setup
+The custom SLIME driver assigns non-overlapping Ray placement-group slices to
+these roles. `--colocate` is forbidden. Modal requests `H100!:4`, so H200
+substitution cannot silently change the experiment.
 
-```bash
-uv sync
-```
+## Data contract
 
-## Prepare the dataset
+The final one-pass curriculum contains:
+
+- the first 1,633 retained `internlm/Lean-Workbook` rows, after requiring
+  `status == "proved"`;
+- the first 367 retained `marcusm117/ProofNet-Verified` rows.
+
+Evaluation uses only:
+
+- Gaokao-Formal;
+- FATE-M.
+
+Every source and model revision is pinned. Training preparation removes exact
+duplicates and exact evaluation-statement matches after deterministic
+source-text normalization. It does not use embeddings, fuzzy matching, AST
+equivalence, or compilation results to filter data. Reference `tactic` and
+`answer` fields are never written to SLIME prompt files.
+
+The datasets retain their native Lean environments:
+
+- Lean-Workbook: Lean/Mathlib `4.8.0-rc1`;
+- ProofNet-Verified and FATE-M: Lean/Mathlib `4.28.0`;
+- Gaokao-Formal: Lean/Mathlib `4.27.0`.
+
+Prepare the pinned source artifacts:
 
 ```bash
 uv run prepare-lean-workbook
+uv run prepare-eval-datasets all
 ```
 
-The filtered Hugging Face dataset is written to
-`data/lean-workbook-proved/`. That directory can be loaded later with:
-
-```python
-from datasets import load_from_disk
-
-dataset = load_from_disk("data/lean-workbook-proved")
-```
-
-Choose a different location or source split if needed:
+Prepare the bounded 16-example smoke curriculum and both complete evaluation
+prompt files:
 
 ```bash
-uv run prepare-lean-workbook --split train --output-dir path/to/output
+uv run prepare-ppo-data \
+  --training-examples 16 \
+  --output-root artifacts/prompts
 ```
 
-The source is pinned to Hugging Face revision
-`2e066e310b2c6d2c27616927ae131f82901c8f1c` by default, and preparation writes
-the source revision and filter into `opsd_metadata.json` beside the saved
-dataset.
+The smoke curriculum contains eight Lean-Workbook and eight ProofNet-Verified
+problems. The command refuses limits of 100 or more.
 
-The command validates the source schema and its result. It fails rather than
-silently producing invalid data if the `status` column is missing or any
-non-`proved` row survives the filter.
-
-## Test
+Prepare the immutable 2,000-example final curriculum and both complete
+evaluation suites:
 
 ```bash
-uv run pytest
+uv run prepare-ppo-data \
+  --mode final \
+  --output-root prepared_data/final-v1
 ```
 
-## Qwen3.5-4B benchmarks on Modal
+`data-report.json` records content hashes, source counts, exclusions, and the
+one-pass selection contract. The prepared prompt files contain no reference
+proof fields.
 
-The harness supports four independently reported benchmarks:
+## Training loops
 
-- `lean-workbook` (Lean 4.8.0-rc1; 10,434 unique proved theorems)
-- `fate-m` (Lean 4.28.0; 150 theorems)
-- `gaokao-formal` (Lean 4.27.0; 495 theorems)
-- `proofnet-verified` (Lean 4.28.0; 367 theorems)
+All arms use the same actor, critic, sparse kernel-verification reward, prompt
+stream, optimizer, batch sizes, and two SGLang engines. SGLang behavior-token
+log-probabilities are stored on each trajectory and used as PPO's old policy.
+Prompt, padding, and non-action tokens are excluded from policy/value losses.
+Verifier infrastructure failures remove a trajectory rather than assigning a
+zero reward.
 
-All prepared artifacts have the exact eight-column Lean-Workbook schema. Source
-revisions, source checksums, Arrow checksums, row counts, ordering, and unique IDs
-are validated before use. Dataset-specific imports, namespace openings, options,
-and helper declarations are carried in `state_before` and supplied unchanged to
-both the prompt and verifier. Natural-language comments and reference proof fields
-are excluded from prompts.
+### Synchronous PPO
 
-FATE-M's JSON omits the `open` and `open scoped` directives present in 22 of
-the pinned official `FATEM/<id>.lean` exercise files. Preparation restores those
-exact per-exercise directives in `state_before` and records their source revision;
-without them, otherwise valid statements using polynomial, conjugation, pointwise,
-opposite-group, or classical notation do not elaborate.
+The actor weights remain fixed while a complete batch is generated and Lean
+verified. Actor and critic update only after the batch finishes; the new actor
+weights are then published atomically to both SGLang engines.
 
-Gaokao-Formal's published statements contain 144 Lean-3-style finite-set big
-operator binders such as `∑ i in s, ...`. Preparation records and applies the
-syntax-only Lean 4.27 normalization `in` to `∈` in those binders; no theorem term,
-type, or proof is otherwise changed.
+### Asynchronous PPO
 
-Each run uses one Modal H100 and one SGLang server to generate exactly one
-sampled proof candidate per selected theorem. It uses
-Qwen3.5's recommended thinking-mode profile for precise coding tasks:
-`temperature=0.6`, `top_p=0.95`, `top_k=20`, `min_p=0`,
-`presence_penalty=0`, and `repetition_penalty=1`. Thinking is explicitly enabled,
-the completion limit is 16,384 tokens, and the server context limit is 32,768.
+The asynchronous driver overlaps learner work with exactly one next rollout
+batch. At checkpoint/evaluation thresholds it stops prefetching and drains the
+current batch before publishing weights. This keeps the global dataset cursor
+identical to the number of trained examples and makes retries exact. Weight
+versions are immutable within each trajectory. The configured publish cadence
+permits at most one learner-update of policy lag; older trajectories are
+loss-masked and recorded.
 
-SGLang is configured for up to 256 active requests and the client maintains a
-512-request backlog. The server may lower the active-request count when its
-Mamba-state cache is the limiting resource. GPU utilization, power, memory, and
-temperature are sampled every five seconds into the result artifact.
+### Asynchronous PPO + DIS
 
-A dataset-specific CPU function first groups selected placeholder theorems by
-their exact preamble and compiles bounded chunks before any H100 request is sent.
-Each statement receives a private preflight namespace, while Mathlib is imported
-once per chunk instead of once per theorem. Candidate proofs remain independently
-verified after generation. Successful preflights report the preamble count,
-chunk count, and elapsed time. Benchmark data is copied only into the final image
-layer, so changing an Arrow artifact no longer invalidates the expensive Mathlib
-build.
+This arm is identical to asynchronous PPO except for the actor-gradient mask.
+For each action token:
 
-Use `--preflight-only` to validate statements without requesting an H100 or
-generating model samples.
+```text
+ratio = exp(logp_current - logp_rollout)
+keep  = (ratio > 1 - epsilon_low) and (ratio < 1 + epsilon_high)
+```
 
-Lean-Workbook contains two malformed stored declarations in the first 50 unique
-theorems. The loader applies exact-hash-guarded repairs to
-`lean_workbook_plus_56` (unresolved real trigonometric identifiers) and
-`lean_workbook_plus_246` (missing proposition colon); the normalization counts
-are recorded in dataset provenance and every run configuration.
+The frozen smoke bounds are `epsilon_low=0.3` and `epsilon_high=5.0`. Standard
+PPO clipping is applied first. DIS then zeros the actor-loss numerator for
+out-of-region tokens while retaining the original valid-action denominator.
+Ratio distributions and masked-token fractions are logged separately from PPO
+clip fraction.
 
-Run it once with:
+## Local validation
+
+```bash
+uv run pytest -q
+git diff --check
+```
+
+The test suite checks all three command paths, physical GPU isolation, exact
+data filtering, proof non-leakage, action-only GAE, behavior-policy accounting,
+asymmetric open-interval DIS masking, and the paid-run example bound.
+
+## Four-H100 smoke run
+
+The authorized integration smoke uses 16 training examples and one rollout:
+
+```bash
+uv run modal run modal_train.py \
+  --arm sync-ppo \
+  --training-examples 16 \
+  --num-rollouts 1 \
+  --run-name smoke-sync-ppo-16-v1
+```
+
+The remote function attests four visible H100s before downloading or training,
+materializes the exact prompt set, converts the pinned checkpoint, starts Ray,
+launches one actor, one critic, and two SGLang engines, performs the PPO update,
+and writes commands, hardware inventory, trajectories, metrics, checkpoints,
+Hugging Face exports, and a completion report to `ppo-async-artifacts`.
+
+To exercise another arm after the first integration gate passes, change
+`--arm` to `async-ppo` or `async-ppo-dis` and use a fresh run name.
+
+## Full final runs
+
+All final arms use rollout batch 8 and global learner batch 8 for exactly 250
+updates (2,000 processed examples). Scalar rollout metrics are aggregated into
+exact 10-example windows. Because batch 8 does not divide 100, checkpoint,
+evaluation, and export actions run after the first completed batch crossing
+each 100-example threshold: 104, 200, 304, 400, and so on through 2,000.
+
+Every action boundary contains a resumable actor, critic, optimizer, and global
+dataset cursor checkpoint; complete Gaokao-Formal and FATE-M pass@1 records;
+and a Hugging Face actor export. Actor/critic training state retains the newest
+complete boundary while all scheduled Hugging Face exports and compact metric
+records remain available. Modal retries resume only from a complete transaction
+marker, so a failed partial tail is not counted twice.
+
+Deploy the production function once, then use the final-run launcher. `--arm
+all` submits three independent persistent function calls and prints all call
+IDs. A shared container limit runs one four-H100 arm at a time, keeping total
+use at four GPUs while the remaining calls stay queued. The launcher first
+runs a CPU-only parse preflight for all pinned SLIME/Megatron commands:
+
+```bash
+uv run modal deploy modal_train.py
+uv run python launch_final.py \
+  --arm all \
+  --run-prefix final-qwen35-4b-b8-v1
+```
+
+The arm name is appended to each artifact directory. A single arm can also be
+submitted by passing `sync-ppo`, `async-ppo`, or `async-ppo-dis`.
+
+## Standalone evaluation
+
+[`modal_benchmark.py`](modal_benchmark.py) is the frozen pass@1 evaluator. It
+supports both required suites and can load the Hugging Face checkpoint exported
+by any training arm from the shared artifact volume:
 
 ```bash
 uv run modal run modal_benchmark.py \
+  --dataset-name gaokao-formal \
+  --checkpoint-path /training-artifacts/<run-name>/hf-<rollout-id> \
+  --run-name qwen35-4b-gaokao-pass1
+
+uv run modal run modal_benchmark.py \
   --dataset-name fate-m \
-  --limit 100 \
-  --run-name qwen35-4b-fate-m-thinking-16k-first100-pass1
+  --checkpoint-path /training-artifacts/<run-name>/hf-<rollout-id> \
+  --run-name qwen35-4b-fate-m-pass1
 ```
 
-Completed generation or verification cannot be repeated. If a container is
-interrupted, the app validates the saved configuration and resumes only missing
-theorem indices, so completed model requests are not regenerated. Results are
-written to the Modal Volume `opsd-benchmark-results` under
-`qwen35-4b-lean-workbook-thinking-16k-pass1/`.
+It compiles every selected statement before allocating the generation GPU,
+generates exactly one proof per theorem with SGLang, and verifies candidates in
+the benchmark's pinned Lean environment. Evaluation output never enters the
+training buffer.

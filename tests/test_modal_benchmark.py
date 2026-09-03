@@ -72,6 +72,10 @@ def test_extract_proof_expression(content: str, expected: str) -> None:
     assert extract_proof_expression(content) == expected
 
 
+def test_unfinished_thinking_is_not_treated_as_a_submitted_proof() -> None:
+    assert extract_proof_expression("<think>draft\n```lean\nby trivial\n```") == ""
+
+
 def test_extract_full_theorem_with_internal_assignment() -> None:
     statement = "theorem example : (let x := 1; x) = 1 := by sorry"
     content = """```lean4

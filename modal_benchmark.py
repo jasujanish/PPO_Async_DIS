@@ -20,7 +20,7 @@ from urllib.request import urlopen
 
 import modal
 
-APP_NAME = "opsd-qwen35-lean-workbook"
+APP_NAME = "ppo-async-qwen35-evaluation"
 DATASET_ID = "internlm/Lean-Workbook"
 DATASET_REVISION = "2e066e310b2c6d2c27616927ae131f82901c8f1c"
 EXPECTED_SOURCE_ROWS = 25_214
@@ -189,8 +189,11 @@ PREFLIGHT_TIMEOUT_SECONDS = 600
 
 RESULTS_ROOT = Path("/results")
 app = modal.App(APP_NAME)
-results_volume = modal.Volume.from_name("opsd-benchmark-results", create_if_missing=True)
-hf_cache_volume = modal.Volume.from_name("opsd-huggingface-cache", create_if_missing=True)
+results_volume = modal.Volume.from_name("ppo-async-evaluation-results", create_if_missing=True)
+hf_cache_volume = modal.Volume.from_name("ppo-async-model-cache", create_if_missing=True)
+training_artifact_volume = modal.Volume.from_name(
+    "ppo-async-artifacts", create_if_missing=True
+)
 
 sglang_image = (
     modal.Image.from_registry(SGLANG_IMAGE)
@@ -381,6 +384,8 @@ def validate_verification_config(
         run_name,
         int(config.get("benchmark_limit", 0)),
         dataset_name,
+        model_path=str(config.get("model", MODEL_ID)),
+        model_revision=config.get("model_revision"),
     )
     mismatches = {
         key: (config.get(key), value)
@@ -396,9 +401,10 @@ def make_request_payload(
     preamble: str = "",
     lean_version: str = "4.8.0-rc1",
     mathlib_version: str = "v4.8.0-rc1",
+    model: str = MODEL_ID,
 ) -> dict[str, Any]:
     return {
-        "model": MODEL_ID,
+        "model": model,
         "messages": [
             {
                 "role": "user",
@@ -414,6 +420,10 @@ def make_request_payload(
 def extract_proof_expression(content: str, formal_statement: str | None = None) -> str:
     """Extract a proof expression while accepting common Markdown wrapping."""
     text = content.strip()
+    if "<think>" in text and "</think>" not in text:
+        return ""
+    if "</think>" in text:
+        text = text.rsplit("</think>", 1)[1].strip()
     fenced = re.search(r"```(?:lean4?|Lean4?)?\s*\n(.*?)```", text, re.DOTALL)
     if fenced:
         text = fenced.group(1).strip()
@@ -602,6 +612,7 @@ async def generate_all(
     initial_completed: int,
     raw_results_path: Path,
     dataset_name: str,
+    model: str = MODEL_ID,
 ) -> dict[str, Any]:
     import aiohttp
 
@@ -623,6 +634,7 @@ async def generate_all(
                 theorem["preamble"],
                 dataset_config["lean_version"],
                 dataset_config["mathlib_version"],
+                model,
             )
             record: dict[str, Any] = {
                 "index": index,
@@ -696,6 +708,8 @@ def base_run_config(
     run_name: str = RUN_NAME,
     benchmark_limit: int = 0,
     dataset_name: str = "lean-workbook",
+    model_path: str = MODEL_ID,
+    model_revision: str | None = MODEL_REVISION,
 ) -> dict[str, Any]:
     dataset_config = DATASET_CONFIGS[dataset_name]
     return {
@@ -708,8 +722,8 @@ def base_run_config(
         "dataset_rows": sum(theorem["reference_steps"] for theorem in theorems),
         "unique_theorems": len(theorems),
         "benchmark_limit": benchmark_limit,
-        "model": MODEL_ID,
-        "model_revision": MODEL_REVISION,
+        "model": model_path,
+        "model_revision": model_revision,
         "sglang_version": SGLANG_VERSION,
         "sglang_image": SGLANG_IMAGE,
         "gpu": GPU,
@@ -844,6 +858,7 @@ def summarize_gpu_metrics(path: Path) -> dict[str, Any]:
     volumes={
         RESULTS_ROOT: results_volume,
         "/vol/huggingface": hf_cache_volume,
+        "/training-artifacts": training_artifact_volume,
     },
     max_containers=1,
     retries=0,
@@ -854,12 +869,35 @@ def generate(
     limit: int = 0,
     run_name: str = RUN_NAME,
     dataset_name: str = "lean-workbook",
+    checkpoint_path: str = "",
 ) -> dict[str, Any]:
     """Generate one sample per theorem, resuming without repeating completed indices."""
+    model_path = MODEL_ID
+    model_revision: str | None = MODEL_REVISION
+    if checkpoint_path:
+        checkpoint = Path(checkpoint_path)
+        artifact_root = Path("/training-artifacts")
+        try:
+            checkpoint.relative_to(artifact_root)
+        except ValueError as exc:
+            raise ValueError(
+                "checkpoint_path must be inside /training-artifacts"
+            ) from exc
+        if not (checkpoint / "config.json").is_file():
+            raise ValueError(f"checkpoint is not a Hugging Face export: {checkpoint}")
+        model_path = str(checkpoint)
+        model_revision = None
     all_theorems = load_theorems(dataset_name)
     theorems = select_theorems(all_theorems, limit)
     run_dir, raw_results_path, _, gpu_metrics_path = run_paths(run_name)
-    expected_config = base_run_config(theorems, run_name, limit, dataset_name)
+    expected_config = base_run_config(
+        theorems,
+        run_name,
+        limit,
+        dataset_name,
+        model_path=model_path,
+        model_revision=model_revision,
+    )
     generation_marker = run_dir / "GENERATION_COMPLETE"
     canary_failure_marker = run_dir / "GENERATION_CANARY_FAILED"
     if generation_marker.exists():
@@ -917,9 +955,7 @@ def generate(
             "-m",
             "sglang.launch_server",
             "--model-path",
-            MODEL_ID,
-            "--revision",
-            MODEL_REVISION,
+            model_path,
             "--host",
             "127.0.0.1",
             "--port",
@@ -943,6 +979,8 @@ def generate(
             "--random-seed",
             str(SEED),
         ]
+        if model_revision is not None:
+            command.extend(["--revision", model_revision])
         print("Starting SGLang:", " ".join(command))
         process = subprocess.Popen(command)
         gpu_metrics_process: subprocess.Popen[Any] | None = None
@@ -966,6 +1004,7 @@ def generate(
                     initial_completed=len(completed_indices),
                     raw_results_path=raw_results_path,
                     dataset_name=dataset_name,
+                    model=model_path,
                 )
             )
             results_volume.commit()
@@ -997,6 +1036,7 @@ def generate(
                         initial_completed=len(completed_indices) + 1,
                         raw_results_path=raw_results_path,
                         dataset_name=dataset_name,
+                        model=model_path,
                     )
                 )
             attempt_metrics = {
@@ -1159,8 +1199,8 @@ def write_summary(
         "dataset_name": config["dataset_name"],
         "dataset_id": config["dataset_id"],
         "dataset_revision": config["dataset_revision"],
-        "model": MODEL_ID,
-        "model_revision": MODEL_REVISION,
+        "model": config["model"],
+        "model_revision": config["model_revision"],
         "gpu": GPU,
         "sglang_version": SGLANG_VERSION,
         "total_theorems": total,
@@ -1581,6 +1621,7 @@ def main(
     limit: int = 0,
     run_name: str = RUN_NAME,
     preflight_only: bool = False,
+    checkpoint_path: str = "",
 ) -> None:
     """Run generation and verification exactly once, sequentially."""
     scope = "all tasks" if limit == 0 else f"the first {limit} tasks"
@@ -1602,7 +1643,7 @@ def main(
         print("Preflight-only run complete; no H100 generation was requested.")
         return
     print("Launching the single H100 generation run...")
-    generation = generate.remote(limit, run_name, dataset_name)
+    generation = generate.remote(limit, run_name, dataset_name, checkpoint_path)
     print(json.dumps(generation, indent=2))
     print("Generation finished. Launching one Lean verification pass on CPU...")
     if lean_environment == "v4.28.0":

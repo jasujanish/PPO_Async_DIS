@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "experiment_id": "ppo-async-qwen35-4b-v1",
+  "model": {
+    "id": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "text_only": true,
+    "precision": "bf16"
+  },
+  "runtime": {
+    "slime_revision": "3778dbf6d1a533ab478ecf5ddaa11449a47752b2",
+    "slime_tag": "v0.3.2",
+    "sglang_version": "0.5.15.post1",
+    "base_container": "docker.io/slimerl/slime:v0.3.2-cu129@sha256:39be6cbb00f9b6770e664ace0c7b9f5ecff2977a1a205e7926a720f906fbc62c"
+  },
+  "hardware": {
+    "provider": "Modal",
+    "request": "H100!:4",
+    "physical_gpu_count": 4,
+    "placement": {
+      "actor": [0],
+      "critic": [1],
+      "rollout": [2, 3]
+    },
+    "rollout_engines": 2,
+    "rollout_gpus_per_engine": 1
+  },
+  "data": {
+    "training": [
+      "internlm/Lean-Workbook:proved-only",
+      "marcusm117/ProofNet-Verified"
+    ],
+    "evaluation": [
+      "Huawei-AI4Math/Mathesis:Gaokao-Formal",
+      "frenzymath/FATE-M"
+    ],
+    "proofs_in_prompt": false,
+    "filter_eval_exact_matches": true,
+    "deduplicate_exact_matches": true
+  },
+  "arms": {
+    "sync_ppo": {
+      "driver": "synchronous",
+      "fully_async_rollout": false,
+      "dis": false,
+      "weight_publish_interval": 1,
+      "max_policy_lag": 0
+    },
+    "async_ppo": {
+      "driver": "asynchronous",
+      "fully_async_rollout": true,
+      "dis": false,
+      "weight_publish_interval": 2,
+      "max_policy_lag": 1
+    },
+    "async_ppo_dis": {
+      "driver": "asynchronous",
+      "fully_async_rollout": true,
+      "dis": true,
+      "weight_publish_interval": 2,
+      "max_policy_lag": 1
+    }
+  },
+  "ppo": {
+    "actor_learning_rate": 3e-7,
+    "critic_learning_rate": 3e-6,
+    "gamma": 1.0,
+    "lambda": 0.95,
+    "clip_epsilon": 0.2,
+    "value_clip": 0.2,
+    "entropy_coefficient": 0.0,
+    "gradient_clip": 1.0,
+    "weight_decay": 0.1,
+    "adam_beta1": 0.9,
+    "adam_beta2": 0.98,
+    "dis_epsilon_low": 0.3,
+    "dis_epsilon_high": 5.0
+  },
+  "rollout": {
+    "batch_size": 16,
+    "samples_per_prompt": 1,
+    "global_batch_size": 16,
+    "max_train_tokens_per_gpu": 4096,
+    "log_probs_chunk_size": 1024,
+    "max_response_tokens": 2048,
+    "max_prompt_tokens": 8192,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "top_k": 20,
+    "seed": 42,
+    "server_concurrency_per_engine": 8
+  },
+  "evaluation": {
+    "samples_per_prompt": 1,
+    "max_response_tokens": 2048,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "production": {
+    "prepared_data_version": "balanced-400-v1",
+    "lean_workbook_examples": 200,
+    "proofnet_verified_examples": 200,
+    "passes_per_dataset": 1,
+    "processed_example_budget": 400,
+    "num_rollouts": 25,
+    "scalar_log_every_examples": 10,
+    "checkpoint_every_examples": 100,
+    "evaluation_every_examples": 100,
+    "timeout_seconds": 86400
+  },
+  "smoke": {
+    "training_examples": 16,
+    "num_rollouts": 1,
+    "maximum_training_examples": 99
+  }
+}

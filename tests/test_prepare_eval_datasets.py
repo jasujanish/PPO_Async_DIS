@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from opsd.prepare_eval_datasets import (
+from ppo_async.prepare_eval_datasets import (
     CANONICAL_COLUMNS,
     normalize_fate_m,
     normalize_gaokao_formal,

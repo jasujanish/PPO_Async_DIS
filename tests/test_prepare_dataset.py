@@ -3,8 +3,8 @@ import pytest
 
 import json
 
-import opsd.prepare_dataset as prepare_module
-from opsd.prepare_dataset import (
+import ppo_async.prepare_dataset as prepare_module
+from ppo_async.prepare_dataset import (
     DATASET_REVISION,
     build_parser,
     keep_only_proved,

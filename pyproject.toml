@@ -3,20 +3,22 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opsd"
-version = "0.1.0"
-description = "Prepare proved theorems from the Lean-Workbook dataset."
+name = "ppo-async"
+version = "0.2.0"
+description = "Multi-GPU synchronous PPO, asynchronous PPO, and PPO-DIS for Lean 4."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "certifi>=2024.8.30",
   "datasets>=4.4,<5",
   "modal>=1.4,<2",
+  "torch>=2.8,<3",
 ]
 
 [project.scripts]
-prepare-lean-workbook = "opsd.prepare_dataset:main"
-prepare-eval-datasets = "opsd.prepare_eval_datasets:main"
+prepare-lean-workbook = "ppo_async.prepare_dataset:main"
+prepare-eval-datasets = "ppo_async.prepare_eval_datasets:main"
+prepare-ppo-data = "ppo_async.data:main"
 
 [dependency-groups]
 dev = [
@@ -28,4 +30,4 @@ testpaths = ["tests"]
 pythonpath = [".", "src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/opsd"]
+packages = ["src/ppo_async"]
