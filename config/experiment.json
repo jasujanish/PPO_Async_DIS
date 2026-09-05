@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "ppo-async-qwen35-4b-balanced700-2pass-v3",
+  "experiment_id": "ppo-async-qwen35-4b-balanced600-1pass-v4-h200",
   "model": {
     "id": "Qwen/Qwen3.5-4B",
     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
@@ -18,7 +18,8 @@
     "sync_gpus": 1,
     "async_gpus": 2,
     "rollout_engines": 1,
-    "rollout_gpus_per_engine": 1
+    "rollout_gpus_per_engine": 1,
+    "gpu_type": "H200"
   },
   "data": {
     "training": [
@@ -87,18 +88,20 @@
     "max_response_tokens": 16384,
     "temperature": 0.6,
     "top_p": 0.95,
-    "top_k": 20
+    "top_k": 20,
+    "server_concurrency_per_engine": 16,
+    "selection_problems_per_dataset": 100
   },
   "production": {
-    "prepared_data_version": "balanced-700-v2",
-    "lean_workbook_examples": 350,
-    "proofnet_verified_examples": 350,
-    "passes_per_dataset": 2,
-    "processed_example_budget": 1400,
-    "num_rollouts": 175,
+    "prepared_data_version": "balanced-600-v3",
+    "lean_workbook_examples": 300,
+    "proofnet_verified_examples": 300,
+    "passes_per_dataset": 1,
+    "processed_example_budget": 600,
+    "num_rollouts": 75,
     "scalar_log_every_examples": 10,
-    "checkpoint_every_examples": 100,
-    "evaluation_every_examples": 100,
+    "checkpoint_every_examples": 200,
+    "evaluation_every_examples": 200,
     "timeout_seconds": 86400
   },
   "smoke": {

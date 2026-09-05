@@ -1,8 +1,9 @@
-"""Serialized Modal runs: one H100 for sync, two for async."""
+"""Serialized Modal runs: one H200 for sync, two for async."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import copy
 import json
 import hashlib
 import os
@@ -102,8 +103,8 @@ def _hardware_inventory(arm: str) -> dict[str, Any]:
         text=True,
     )
     rows = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-    if len(rows) != gpu_count(arm) or any("H100" not in row for row in rows):
-        raise RuntimeError(f"strict H100 hardware attestation failed: {rows}")
+    if len(rows) != gpu_count(arm) or any("H200" not in row for row in rows):
+        raise RuntimeError(f"strict H200 hardware attestation failed: {rows}")
     return {
         "requested": gpu_request(arm),
         "cuda_device_count": torch.cuda.device_count(),
@@ -176,9 +177,9 @@ def _prepared_production_data() -> dict[str, Any]:
     return {"report": report, "paths": paths}
 
 
-def _ensure_run_contract(run_root: Path, arm: str, data_report: dict[str, Any]) -> None:
+def _ensure_run_contract(run_root: Path, arm: str, data_report: dict[str, Any], config=None) -> None:
     """Prevent resuming old data, token limits, or a different arm by run name."""
-    expected = {"experiment": EXPERIMENT, "arm": arm, "data_sha256": data_report["sha256"]}
+    expected = {"experiment": config or EXPERIMENT, "arm": arm, "data_sha256": data_report["sha256"]}
     path = run_root / "run-contract.json"
     if path.is_file():
         if json.loads(path.read_text(encoding="utf-8")) != expected:
@@ -216,7 +217,7 @@ def _write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
     )
 
 
-def _resume_boundary(run_root: Path) -> int | None:
+def _resume_boundary(run_root: Path, scalar_interval: int | None = None) -> int | None:
     """Restore the newest complete transaction and discard a failed tail."""
     actor_root = run_root / "checkpoints" / "actor"
     critic_root = run_root / "checkpoints" / "critic"
@@ -266,9 +267,8 @@ def _resume_boundary(run_root: Path) -> int | None:
     tracking_state.write_bytes(snapshot.read_bytes())
 
     processed = (boundary + 1) * int(EXPERIMENT["rollout"]["batch_size"])
-    metric_limit = processed // int(EXPERIMENT["production"]["scalar_log_every_examples"]) * int(
-        EXPERIMENT["production"]["scalar_log_every_examples"]
-    )
+    scalar_interval = scalar_interval or int(EXPERIMENT["production"]["scalar_log_every_examples"])
+    metric_limit = processed // scalar_interval * scalar_interval
     _write_jsonl(
         run_root / "metrics.jsonl",
         [record for record in _read_jsonl(run_root / "metrics.jsonl") if int(record["examples_end"]) <= metric_limit],
@@ -512,11 +512,28 @@ def train_final(arm: str, run_name: str):
     return worker.remote("final", arm, run_name)
 
 
+def _run_final_evaluation(command, run_root: Path, arm: str, environment: dict[str, str]) -> None:
+    # Ray workers inherit the head's environment, not just the driver subprocess's.
+    final_environment = {**environment, "PPO_ASYNC_EVALUATION_LOG": str(run_root / "final-evaluation.jsonl")}
+    try:
+        subprocess.run(
+            ["ray", "start", "--head", "--node-ip-address", "127.0.0.1",
+             "--num-gpus", str(gpu_count(arm)), "--num-cpus", "32", "--disable-usage-stats"],
+            env=final_environment, check=True,
+        )
+        with _gpu_utilization(run_root):
+            subprocess.run(command, cwd="/root/slime", check=True, env=final_environment)
+    finally:
+        subprocess.run(["ray", "stop", "--force"], env=final_environment, check=False)
+        artifact_volume.commit()
+
+
 def _run_final(
     arm: str,
     run_name: str,
+    *, integration_smoke: bool = False,
 ) -> dict[str, Any]:
-    """Run one resumable, exact-two-pass production experiment arm."""
+    """Run the production path, optionally with a small integration-test budget."""
     sys.path.insert(0, str(REMOTE_ROOT / "src"))
     sys.path.insert(0, "/root/slime")
     from ppo_async.training.artifacts import validate_production_artifacts
@@ -525,13 +542,21 @@ def _run_final(
         write_role_config,
     )
 
-    selected_arm = arm_config(EXPERIMENT, arm)
-    production = EXPERIMENT["production"]
+    experiment = copy.deepcopy(EXPERIMENT)
+    if integration_smoke:
+        experiment["production"].update(
+            processed_example_budget=16, num_rollouts=2, scalar_log_every_examples=8,
+            checkpoint_every_examples=8, evaluation_every_examples=8,
+            lean_workbook_examples=8, proofnet_verified_examples=8,
+        )
+        experiment["evaluation"]["selection_problems_per_dataset"] = 16
+    selected_arm = arm_config(experiment, arm)
+    production = experiment["production"]
     run_name = _safe_run_name(run_name)
     run_root = Path("/vol/artifacts") / run_name
     completion_path = run_root / "RUN_COMPLETE.json"
     prepared = _prepared_production_data()
-    _ensure_run_contract(run_root, arm, prepared["report"])
+    _ensure_run_contract(run_root, arm, prepared["report"], experiment)
     if completion_path.is_file():
         return json.loads(completion_path.read_text(encoding="utf-8"))
     run_root.mkdir(parents=True, exist_ok=True)
@@ -545,7 +570,22 @@ def _run_final(
             "run a conversion preflight before concurrent production jobs"
         )
 
-    boundary = _resume_boundary(run_root)
+    from ppo_async.training.evaluation import selection_paths, best_checkpoint, final_eval_command
+
+    full_eval_paths = {name: prepared["paths"][name] for name in ("gaokao-formal", "fate-m")}
+    checkpoint_eval_paths = selection_paths(
+        full_eval_paths, run_root / "selection-prompts",
+        experiment["evaluation"]["selection_problems_per_dataset"], experiment["rollout"]["seed"],
+    )
+    if integration_smoke:
+        smoke_train = run_root / "train-integration.jsonl"
+        rows = _read_jsonl(prepared["paths"]["train"])
+        selected_rows = [r for source in ("lean-workbook", "proofnet-verified")
+                         for r in [r for r in rows if r["metadata"]["source_name"] == source][:8]]
+        _write_jsonl(smoke_train, selected_rows)
+        prepared["paths"]["train"] = smoke_train
+        full_eval_paths = selection_paths(full_eval_paths, run_root / "final-smoke-prompts", 32, 42)
+    boundary = _resume_boundary(run_root, production["scalar_log_every_examples"])
     actor_root = run_root / "checkpoints" / "actor"
     critic_root = run_root / "checkpoints" / "critic"
     role_config = run_root / "roles.json"
@@ -554,8 +594,8 @@ def _run_final(
         initial_checkpoint=converted,
         actor_save=actor_root,
         critic_save=critic_root,
-        actor_lr=float(EXPERIMENT["ppo"]["actor_learning_rate"]),
-        critic_lr=float(EXPERIMENT["ppo"]["critic_learning_rate"]),
+        actor_lr=float(experiment["ppo"]["actor_learning_rate"]),
+        critic_lr=float(experiment["ppo"]["critic_learning_rate"]),
         actor_load=actor_root if boundary is not None else None,
         critic_load=critic_root if boundary is not None else None,
     )
@@ -567,12 +607,9 @@ def _run_final(
         role_config=role_config,
         artifact_root=run_root,
         num_rollouts=int(production["num_rollouts"]),
-        config=EXPERIMENT,
+        config=experiment,
         production=True,
-        eval_paths={
-            "gaokao-formal": str(prepared["paths"]["gaokao-formal"]),
-            "fate-m": str(prepared["paths"]["fate-m"]),
-        },
+        eval_paths=checkpoint_eval_paths,
         load_checkpoint=actor_root if boundary is not None else None,
     )
     attempt = len(list(run_root.glob("command-attempt-*.json"))) + 1
@@ -593,8 +630,8 @@ def _run_final(
         "PYTHONUNBUFFERED": "1",
         "PPO_ASYNC_ARM": arm,
         "PPO_ASYNC_MAX_POLICY_LAG": str(selected_arm["max_policy_lag"]),
-        "PPO_ASYNC_DIS_EPSILON_LOW": str(EXPERIMENT["ppo"]["dis_epsilon_low"]),
-        "PPO_ASYNC_DIS_EPSILON_HIGH": str(EXPERIMENT["ppo"]["dis_epsilon_high"]),
+        "PPO_ASYNC_DIS_EPSILON_LOW": str(experiment["ppo"]["dis_epsilon_low"]),
+        "PPO_ASYNC_DIS_EPSILON_HIGH": str(experiment["ppo"]["dis_epsilon_high"]),
         "PPO_ASYNC_EVENT_LOG": str(run_root / "events.jsonl"),
         "PPO_ASYNC_POLICY_VERSIONS": str(run_root / "tracking" / "policy-versions.json"),
         "PPO_ASYNC_METRICS_LOG": str(run_root / "metrics.jsonl"),
@@ -602,7 +639,7 @@ def _run_final(
         "PPO_ASYNC_TRACKING_STATE": str(run_root / "tracking" / "state.json"),
         "PPO_ASYNC_TRACKING_SNAPSHOTS": str(run_root / "tracking" / "snapshots"),
         "PPO_ASYNC_SCALAR_LOG_EVERY": str(production["scalar_log_every_examples"]),
-        "PPO_ASYNC_BATCH_SIZE": str(EXPERIMENT["rollout"]["batch_size"]),
+        "PPO_ASYNC_BATCH_SIZE": str(experiment["rollout"]["batch_size"]),
     }
     subprocess.run(
         [
@@ -645,12 +682,24 @@ def _run_final(
                     process.kill()
             subprocess.run(["ray", "stop", "--force"], env=environment, check=False)
 
+    best = best_checkpoint(_read_jsonl(run_root / "evaluations.jsonl"))
+    best["hf_export"] = str(run_root / f"hf-{best['rollout_id']}")
+    (run_root / "best-checkpoint.json").write_text(json.dumps(best, indent=2) + "\n")
+    final_command = final_eval_command(command, best, checkpoint_eval_paths, full_eval_paths)
+    (run_root / "command-final-eval.json").write_text(json.dumps(final_command, indent=2) + "\n")
+    final_log = run_root / "final-evaluation.jsonl"
+    final_log.unlink(missing_ok=True)
+    artifact_volume.commit()
+    _run_final_evaluation(final_command, run_root, arm, environment)
+
     artifacts = validate_production_artifacts(
         run_root,
         final_rollout_id=int(production["num_rollouts"]) - 1,
         processed_example_budget=int(production["processed_example_budget"]),
         scalar_interval=int(production["scalar_log_every_examples"]),
         action_interval=int(production["checkpoint_every_examples"]),
+        selection_per_dataset=experiment["evaluation"]["selection_problems_per_dataset"],
+        final_counts={"gaokao-formal": 32, "fate-m": 32} if integration_smoke else None,
     )
     report = {
         "status": "complete",
@@ -660,7 +709,8 @@ def _run_final(
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "resumed_after_rollout": boundary,
         "hardware": hardware,
-        "training_examples": sum(prepared["report"]["training_by_source"].values()),
+        "mode": "integration-smoke" if integration_smoke else "final",
+        "training_examples": production["processed_example_budget"],
         "processed_examples": production["processed_example_budget"],
         "passes_per_dataset": production["passes_per_dataset"],
         "data_sha256": prepared["report"]["sha256"],
@@ -685,18 +735,22 @@ _worker_options = dict(
 )
 
 
-@app.function(gpu="H100!:1", **_worker_options)
+@app.function(gpu="H200:1", **_worker_options)
 def train_sync(mode, arm, run_name, training_examples=16, num_rollouts=1):
     if arm != "sync_ppo":
         raise ValueError("one-GPU worker requires sync_ppo")
-    return _run_final(arm, run_name) if mode == "final" else _run_smoke(arm, training_examples, num_rollouts, run_name)
+    if mode in {"final", "integration-smoke"}:
+        return _run_final(arm, run_name, integration_smoke=mode == "integration-smoke")
+    return _run_smoke(arm, training_examples, num_rollouts, run_name)
 
 
-@app.function(gpu="H100!:2", **_worker_options)
+@app.function(gpu="H200:2", **_worker_options)
 def train_async(mode, arm, run_name, training_examples=16, num_rollouts=1):
     if arm not in {"async_ppo", "async_ppo_dis"}:
         raise ValueError("two-GPU worker requires an async arm")
-    return _run_final(arm, run_name) if mode == "final" else _run_smoke(arm, training_examples, num_rollouts, run_name)
+    if mode in {"final", "integration-smoke"}:
+        return _run_final(arm, run_name, integration_smoke=mode == "integration-smoke")
+    return _run_smoke(arm, training_examples, num_rollouts, run_name)
 
 
 @app.local_entrypoint()
@@ -729,12 +783,15 @@ def main(
             json.dumps(
                 {
                     "status": "launched",
-                    "gpu_concurrency": "one production run at a time; sync=1 H100, async=2 H100",
+                    "gpu_concurrency": "one production run at a time; sync=1 H200, async=2 H200",
                     "calls": launches,
                 },
                 indent=2,
             )
         )
+    elif mode == "integration-smoke":
+        worker = train_sync if normalized_arm == "sync_ppo" else train_async
+        print(json.dumps(worker.remote(mode, normalized_arm, run_name), indent=2))
     elif mode == "smoke":
         report = train_smoke.remote(
             normalized_arm,
@@ -744,4 +801,4 @@ def main(
         )
         print(json.dumps(report, indent=2))
     else:
-        raise ValueError("mode must be 'smoke' or 'final'")
+        raise ValueError("mode must be 'smoke', 'integration-smoke', or 'final'")

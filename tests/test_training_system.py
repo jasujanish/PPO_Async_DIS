@@ -229,6 +229,9 @@ def test_launcher_selects_three_distinct_loops() -> None:
     assert "--rollout-function-path" not in sync
     assert "ppo_async.training.stream.generate_rollout" in asynchronous
     assert "ppo_async.training.stream.StreamDataSource" in asynchronous
+    assert "--sglang-enable-weights-cpu-backup" in sync
+    assert "--sglang-enable-weights-cpu-backup" not in asynchronous
+    assert "--sglang-enable-weights-cpu-backup" not in dis
     assert "--colocate" in sync
     assert "--colocate" not in asynchronous
     assert "--rollout-sample-hook-path" not in asynchronous
@@ -249,7 +252,7 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
         prompt_data=Path("/data/train-final.jsonl"),
         role_config=Path("/tmp/roles.json"),
         artifact_root=Path("/artifacts/final"),
-        num_rollouts=175,
+        num_rollouts=75,
         config=config,
         production=True,
         eval_paths={
@@ -260,16 +263,16 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
     )
     assert command[command.index("--rollout-batch-size") + 1] == "8"
     assert command[command.index("--global-batch-size") + 1] == "8"
-    assert command[command.index("--processed-example-budget") + 1] == "1400"
+    assert command[command.index("--processed-example-budget") + 1] == "600"
     assert command[command.index("--scalar-log-every-examples") + 1] == "10"
-    assert command[command.index("--checkpoint-every-examples") + 1] == "100"
-    assert command[command.index("--evaluation-every-examples") + 1] == "100"
+    assert command[command.index("--checkpoint-every-examples") + 1] == "200"
+    assert command[command.index("--evaluation-every-examples") + 1] == "200"
     assert command[command.index("--eval-max-response-len") + 1] == "16384"
     assert command[command.index("--load") + 1] == "/artifacts/final/checkpoints/actor"
     assert "--eval-prompt-data" in command
-    assert "slime.rollout.sglang_rollout.generate_rollout" in command
+    assert "ppo_async.training.evaluation.generate_rollout" in command
     assert "slime.rollout.fully_async_rollout.generate_rollout_fully_async" not in command
-    assert command[command.index("--save-interval") + 1] == "176"
+    assert command[command.index("--save-interval") + 1] == "76"
     assert "--ci-test" not in command
     assert "--no-save-optim" not in command
 
@@ -324,7 +327,7 @@ def test_scalar_tracking_writes_exact_ten_example_windows(tmp_path: Path, monkey
 
 def test_modal_entrypoints_request_only_needed_gpus() -> None:
     source = (ROOT / "modal_train.py").read_text(encoding="utf-8")
-    assert 'gpu="H100!:1"' in source and 'gpu="H100!:2"' in source
+    assert 'gpu="H200:1"' in source and 'gpu="H200:2"' in source
     assert '"--num-gpus", str(gpu_count(arm))' in source
     assert "training_examples <= maximum < 100" in source
 

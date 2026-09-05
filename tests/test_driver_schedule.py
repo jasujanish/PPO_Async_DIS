@@ -134,3 +134,22 @@ def test_shared_gpu_critic_finishes_before_actor_is_submitted(monkeypatch):
                       SimpleNamespace(async_train=actor_train), SimpleNamespace(async_train=critic_train))
     assert events == [('submit', 'critic'), ('wait', 'critic_done_and_offloaded'),
                       ('submit', 'actor'), ('wait', 'actor_done_and_offloaded')]
+
+
+def test_checkpoint_resume_requires_rollout_weight_preservation(monkeypatch):
+    placement = ModuleType('slime.ray.placement_group')
+    allocations = []
+    def allocate(count):
+        allocations.append(count)
+        return 'pg', [0], [0]
+    placement._create_placement_group = allocate
+    monkeypatch.setitem(sys.modules, 'slime.ray.placement_group', placement)
+    args = SimpleNamespace(colocate=True, offload_train=True, offload_rollout=True,
+                           sglang_enable_weights_cpu_backup=False)
+    with pytest.raises(ValueError, match='CPU weight backup'):
+        driver._placement_groups(args)
+    assert allocations == []
+    args.sglang_enable_weights_cpu_backup = True
+    groups = driver._placement_groups(args)
+    assert allocations == [1]
+    assert groups['actor'] == groups['critic'] == groups['rollout']

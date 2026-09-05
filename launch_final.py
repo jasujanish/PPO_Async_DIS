@@ -28,7 +28,7 @@ def _safe_prefix(value: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-prefix", default="balanced700-2pass-qwen35-4b-h100-b8-v3")
+    parser.add_argument("--run-prefix", default="balanced600-1pass-qwen35-4b-h200-b8-v4")
     parser.add_argument(
         "--arm",
         choices=("selected", "all", "sync-ppo", "async-ppo", "async-ppo-dis"),
@@ -68,7 +68,7 @@ def main() -> None:
                 "status": "launched",
                 "deployment": APP_NAME,
                 "preflight": preflight,
-                "gpu_concurrency": "one production run at a time; sync=1 H100, async=2 H100",
+                "gpu_concurrency": "one production run at a time; sync=1 H200, async=2 H200",
                 "calls": calls,
             },
             indent=2,

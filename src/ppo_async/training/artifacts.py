@@ -62,6 +62,8 @@ def validate_production_artifacts(
     processed_example_budget: int,
     scalar_interval: int,
     action_interval: int,
+    selection_per_dataset: int = 100,
+    final_counts: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """Require terminal state, exact tracking windows, and all scheduled actions."""
     verified = validate_smoke_artifacts(run_root, final_rollout_id)
@@ -133,8 +135,25 @@ def validate_production_artifacts(
     state = json.loads(tracking_state_path.read_text(encoding="utf-8"))
     if state.get("next_example") != processed_example_budget + 1 or state.get("pending"):
         raise RuntimeError("production scalar tracking state did not finish cleanly")
+    from ppo_async.training.evaluation import best_checkpoint
+
+    if any(d["examples"] != selection_per_dataset for r in evaluations for d in r["datasets"].values()):
+        raise RuntimeError("selection evaluation problem count mismatch")
+    best = json.loads((run_root / "best-checkpoint.json").read_text())
+    if any(best.get(key) != value for key, value in best_checkpoint(evaluations).items()):
+        raise RuntimeError("selected checkpoint does not maximize selection pass@1")
+    final_records = [json.loads(line) for line in
+                     (run_root / "final-evaluation.jsonl").read_text().splitlines() if line.strip()]
+    if len(final_records) != 1 or final_records[0]["rollout_id"] != best["rollout_id"]:
+        raise RuntimeError("final evaluation must run once on the selected checkpoint")
+    if {name: d["examples"] for name, d in final_records[0]["datasets"].items()} != (final_counts or {
+        "gaokao-formal": 495, "fate-m": 150,
+    }):
+        raise RuntimeError("final evaluation problem count mismatch")
     return {
         **verified,
+        "best_checkpoint": best,
+        "final_evaluation": final_records[0],
         "scalar_windows": expected_scalar_windows,
         "checkpoint_events": len(checkpoint_events),
         "evaluation_events": len(evaluation_events),

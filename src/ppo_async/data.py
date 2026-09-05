@@ -323,8 +323,8 @@ def materialize_final(
     data_root: Path,
     output_root: Path,
     *,
-    lean_workbook_examples: int = 350,
-    proofnet_verified_examples: int = 350,
+    lean_workbook_examples: int = 300,
+    proofnet_verified_examples: int = 300,
     seed: int = 42,
 ) -> dict[str, Any]:
     """Write the deterministic production curriculum and full eval sets.
@@ -333,8 +333,8 @@ def materialize_final(
     statement deduplication, and evaluation-leakage filtering. Selection is
     performed before the chosen rows are deterministically interleaved.
     """
-    if lean_workbook_examples != 350 or proofnet_verified_examples != 350:
-        raise ValueError("final curriculum must contain exactly 350 Lean-Workbook and 350 ProofNet rows")
+    if lean_workbook_examples != 300 or proofnet_verified_examples != 300:
+        raise ValueError("final curriculum must contain exactly 300 Lean-Workbook and 300 ProofNet rows")
 
     eval_rows, train_by_source, filtered, exclusions = _load_filtered_corpora(data_root)
     candidates = {
@@ -365,10 +365,10 @@ def materialize_final(
         train_filename="train-final.jsonl",
         mode="production",
     )
-    report["processed_example_budget"] = len(selected) * 2
+    report["processed_example_budget"] = len(selected)
     report["selection"] = {
         "contract": "first-retained-canonical-source-order",
-        "passes_per_dataset": 2,
+        "passes_per_dataset": 1,
         "lean_workbook_examples": lean_workbook_examples,
         "proofnet_verified_examples": proofnet_verified_examples,
     }

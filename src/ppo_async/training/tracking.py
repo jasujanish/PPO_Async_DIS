@@ -130,17 +130,15 @@ def log_eval_scalars(
     data: dict[str, dict[str, Any]],
     extra_metrics: dict[str, Any] | None,
 ) -> bool:
-    """Persist pass@1 and truncation scalars for every scheduled evaluation."""
-    del args, extra_metrics
+    """Persist single-sample pass@1 for selection or final evaluation."""
+    del extra_metrics
     batch_size = int(os.environ["PPO_ASYNC_BATCH_SIZE"])
     datasets: dict[str, Any] = {}
     for name, values in sorted(data.items()):
         rewards = [float(value) for value in values["rewards"]]
-        truncated = [int(value) for value in values.get("truncated", [])]
         datasets[name] = {
             "examples": len(rewards),
             "pass_at_1": sum(rewards) / len(rewards),
-            "truncated_rate": sum(truncated) / len(truncated) if truncated else 0.0,
         }
     _append(
         Path(os.environ["PPO_ASYNC_EVALUATION_LOG"]),

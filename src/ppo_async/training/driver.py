@@ -23,6 +23,8 @@ def _placement_groups(args: Any) -> dict[str, Any]:
     from slime.ray.placement_group import _create_placement_group
 
     total = 1 if args.colocate else 2
+    if args.offload_rollout and not args.sglang_enable_weights_cpu_backup:
+        raise ValueError("rollout offload requires SGLang CPU weight backup for checkpoint resume")
     if not args.offload_train:
         raise ValueError("shared actor/critic GPU requires training offload")
     placement_group, bundle_indices, gpu_ids = _create_placement_group(total)
@@ -49,6 +51,8 @@ def _add_production_arguments(parser):
     parser.add_argument("--scalar-log-every-examples", type=int, default=None)
     parser.add_argument("--checkpoint-every-examples", type=int, default=None)
     parser.add_argument("--evaluation-every-examples", type=int, default=None)
+    parser.add_argument("--eval-concurrency", type=int, default=16)
+    parser.add_argument("--final-eval-rollout", type=int, default=None)
     return parser
 
 
@@ -193,6 +197,13 @@ def _save_if_due(
         processed_examples=processed_examples,
         force_sync=force_sync,
     )
+    if not _production_mode(args):
+        _commit_checkpoint(args, rollout_id)
+    return True
+
+
+def _commit_checkpoint(args, rollout_id):
+    processed_examples = _processed_examples(args, rollout_id)
     _write_commit_boundary(args, rollout_id)
     # The Modal parent watches this marker and commits the mounted Volume while
     # the long-running child process is still alive. This makes checkpoints
@@ -222,6 +233,7 @@ def _evaluate_if_due(args: Any, rollout_id: int, rollout_manager: Any) -> bool:
         rollout_id=rollout_id,
         processed_examples=_processed_examples(args, rollout_id),
     )
+    _commit_checkpoint(args, rollout_id)
     return True
 
 
@@ -251,10 +263,7 @@ def train_synchronous(args: Any) -> None:
                 published_version=published_version,
                 learner_updates=versions[published_version],
             )
-            _evaluate_if_due(args, rollout_id, rollout_manager)
-            # Checkpoint last: the dataset cursor, actor/critic/optimizer,
-            # scalar state, evaluation record, and HF export become one
-            # recoverable boundary when the parent commits the Modal Volume.
+            # Save first, evaluate that policy, then commit both as one recovery boundary.
             _save_if_due(
                 args,
                 rollout_id,
@@ -264,6 +273,7 @@ def train_synchronous(args: Any) -> None:
                 rollout_manager,
                 actor_trains,
             )
+            _evaluate_if_due(args, rollout_id, rollout_manager)
     finally:
         ray.get(rollout_manager.dispose.remote())
         finish_tracking(args)
@@ -291,9 +301,9 @@ def train_asynchronous(args: Any) -> None:
             write_policy_versions(versions)
             _event("weight_publish", published_version=published_version,
                    learner_updates=versions[published_version])
-            _evaluate_if_due(args, rollout_id, rollout_manager)
             _save_if_due(args, rollout_id, per_epoch, actor_model, critic_model,
                          rollout_manager, actor_trains)
+            _evaluate_if_due(args, rollout_id, rollout_manager)
     finally:
         ray.get(rollout_manager.dispose.remote())
         finish_tracking(args)
@@ -303,7 +313,11 @@ def main() -> None:
     from slime.utils.arguments import parse_args
 
     args = parse_args(add_custom_arguments=_add_production_arguments)
+    if args.eval_concurrency <= 0:
+        raise ValueError("eval concurrency must be positive")
     if _production_mode(args):
+        if args.checkpoint_every_examples != args.evaluation_every_examples:
+            raise ValueError("checkpoint and selection evaluation intervals must match")
         expected = args.num_rollout * args.rollout_batch_size * args.n_samples_per_prompt
         if expected != args.processed_example_budget:
             raise ValueError(
@@ -319,6 +333,10 @@ def main() -> None:
                 raise ValueError(f"{name} must be positive in production")
     if os.environ.get("PPO_ASYNC_PARSE_ONLY") == "1":
         print("PPO_ASYNC_PARSE_OK", flush=True)
+        return
+    if args.final_eval_rollout is not None:
+        from ppo_async.training.evaluation import evaluate_only
+        evaluate_only(args)
         return
     arm = os.environ.get("PPO_ASYNC_ARM", "")
     if arm == "sync_ppo":

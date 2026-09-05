@@ -10,14 +10,15 @@ proving with `Qwen/Qwen3.5-4B`:
 
 The implementation uses pinned SLIME v0.3.2 and SGLang on one Modal node:
 
-| Track | H100s | Placement |
+| Track | H200s | Placement |
 | --- | --- | --- |
 | Synchronous | 1 | Generation, critic, then actor take turns on GPU 0 |
 | Asynchronous / DIS | 2 | Critic and actor take turns on GPU 0; generation runs on GPU 1 |
 
 Inactive training models are offloaded to CPU. Sync also offloads SGLang before
-training or saving. Critic completion is awaited before the actor wakes, so the
-shared training GPU never runs both models together. Modal requests strict H100s
+training or saving. Sync enables SGLang CPU weight backup so checkpoint
+release/resume restores the published weights, not just their storage. Critic completion is awaited before the actor wakes, so the
+shared training GPU never runs both models together. Modal requests strict H200s
 and 192 GiB of host memory for the offloaded models and optimizer states.
 This allocation reduces reserved GPU time; measured throughput still depends on
 proof lengths, CPU transfer overhead and verification time. Full 16k memory
@@ -25,12 +26,12 @@ headroom must be checked on the target runtime, not inferred from CPU tests.
 
 ## Data contract
 
-The final curriculum contains 700 unique problems, each visited twice with
-freshly generated proofs (1,400 total training attempts):
+The final curriculum contains 600 unique problems, each visited once with
+a freshly generated proof (600 total training attempts):
 
-- the first 350 retained `internlm/Lean-Workbook` rows, after requiring
+- the first 300 retained `internlm/Lean-Workbook` rows, after requiring
   `status == "proved"`;
-- the first 350 retained `marcusm117/ProofNet-Verified` rows.
+- the first 300 retained `marcusm117/ProofNet-Verified` rows.
 
 Evaluation uses only:
 
@@ -68,13 +69,13 @@ uv run prepare-ppo-data \
 The smoke curriculum contains eight Lean-Workbook and eight ProofNet-Verified
 problems. The command refuses limits of 100 or more.
 
-Prepare the immutable 700-example final curriculum and both complete
+Prepare the immutable 600-example final curriculum and both complete
 evaluation suites:
 
 ```bash
 uv run prepare-ppo-data \
   --mode final \
-  --output-root prepared_data/balanced-700-v2
+  --output-root prepared_data/balanced-600-v3
 ```
 
 `data-report.json` records content hashes, source counts, exclusions, and the
@@ -131,7 +132,7 @@ skipping data or consuming unlimited compute.
 Checkpoints save the source cursor together with original prompts for every
 outstanding attempt, including completed but unconsumed proofs. On retry those
 attempts are regenerated; already committed training examples are not replayed.
-The producer never reserves more than the 1,400 logical attempts. Completion
+The producer never reserves more than the 600 logical attempts. Completion
 order is intentionally nondeterministic, while the two-pass prompt multiset is
 preserved. Generation continues during checkpoints and evaluation, subject to
 queue backpressure. Smoke uses exactly this production scheduler.
@@ -181,7 +182,7 @@ uv run modal run modal_train.py \
   --run-name smoke-sync-ppo-16-16k-v3
 ```
 
-The remote function attests one H100 for sync or two for async before downloading or training,
+The remote function attests one H200 for sync or two for async before downloading or training,
 materializes the exact prompt set, converts the pinned checkpoint, starts Ray,
 launches one actor, one critic, and one SGLang engine, performs the PPO updates,
 and writes commands, hardware inventory, trajectories, metrics, checkpoints,
@@ -190,23 +191,39 @@ Hugging Face exports, and a completion report to `ppo-async-artifacts`.
 To exercise another arm after the first integration gate passes, change
 `--arm` to `async-ppo` or `async-ppo-dis` and use a fresh run name.
 
+## Final integration smoke
+
+Run `modal run --detach modal_train.py --mode integration-smoke --arm sync-ppo
+--run-name <fresh-name>` (or `--arm async-ppo-dis`) to exercise the production
+path with 16 training problems, two updates/checkpoints, a fixed 32-problem
+selection evaluation after each checkpoint, and 64 final evaluation problems
+on the winning HF export. Training/evaluation concurrency remains 8/16 and both
+response caps remain 16,384 tokens. Production settings are unchanged.
+
 ## Full final runs
 
-All final arms use rollout batch 8 and global learner batch 8 for exactly 175
-updates (1,400 processed examples). Scalar rollout metrics are aggregated into
-exact 10-example windows. The prompt file stores each of the 700 theorems once;
-SLIME reshuffles at the second pass, including a batch spanning the pass boundary,
-and restores both epoch and position on resume. Batches of 8 divide the
-1,400-attempt budget exactly. Because batch 8 does not divide 100, checkpoint,
-evaluation, and export actions run after the first completed batch crossing
-each 100-example threshold: 104, 200, 304, 400, and so on through 1,400.
+All final arms use rollout batch 8 and global learner batch 8 for exactly 75
+updates (600 processed examples, one pass). Scalar rollout metrics use exact
+10-example windows. Checkpoints and HF exports are saved at 200, 400, and 600
+processed examples, followed by pass@1 evaluation on the same fixed 200 problems
+(100 Gaokao-Formal and 100 FATE-M, selected by seeded statement hash).
 
-Every action boundary contains a resumable actor, critic, optimizer, and global
-dataset cursor (and async outstanding prompts) checkpoint; complete Gaokao-Formal and FATE-M pass@1 records;
-and a Hugging Face actor export. Actor/critic training state retains the newest
-complete boundary while all scheduled Hugging Face exports and compact metric
-records remain available. Modal retries resume only from a complete transaction
-marker, so a failed partial tail is not counted twice.
+The highest aggregate selection pass@1 wins; ties select the earlier checkpoint.
+After training, a fresh inference process loads that checkpoint's HF export and
+runs one final pass@1 evaluation on all 645 benchmark problems. These final sets
+include the 200 selection problems, so their aggregate score is not an untouched
+holdout estimate. Every evaluation uses one response per problem and a 16,384-token
+cap. Evaluation has an independent concurrency and HTTP pool limit of 16;
+training retains concurrency 8. SGLang allows at most 16 running requests in total,
+so concurrent async training/eval requests can queue at the server.
+
+Every recovery boundary contains actor, critic, optimizer, dataset cursor (plus
+async outstanding prompts), selection scores, and an HF export. The transaction
+is committed only after the checkpoint and selection evaluation both succeed.
+Only the newest resumable training state is retained; all three HF exports remain
+available for selection. Results are recorded in `evaluations.jsonl`,
+`best-checkpoint.json`, and `final-evaluation.jsonl`. Retries resume from the last
+complete transaction without counting a failed partial tail twice.
 
 Deploy the production function once, then use the final-run launcher. `--arm
 all` submits three independent persistent function calls and prints all call
@@ -218,7 +235,7 @@ runs a CPU-only parse preflight for all pinned SLIME/Megatron commands:
 uv run modal deploy modal_train.py
 uv run python launch_final.py \
   --arm all \
-  --run-prefix balanced700-2pass-qwen35-4b-h100-b8-v3
+  --run-prefix balanced600-1pass-qwen35-4b-h200-b8-v4
 ```
 
 The arm name is appended to each artifact directory. A single arm can also be

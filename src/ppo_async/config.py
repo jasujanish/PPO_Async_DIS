@@ -16,7 +16,7 @@ def gpu_count(arm: str) -> int:
 
 
 def gpu_request(arm: str) -> str:
-    return f"H100!:{gpu_count(arm)}"
+    return f"H200:{gpu_count(arm)}"
 
 
 def project_root() -> Path:
@@ -41,7 +41,7 @@ def validate_experiment(config: dict[str, Any]) -> None:
         raise ValueError(f"model must be {MODEL_ID}")
 
     if config.get("hardware") != {
-        "provider": "Modal", "sync_gpus": 1, "async_gpus": 2,
+        "provider": "Modal", "gpu_type": "H200", "sync_gpus": 1, "async_gpus": 2,
         "rollout_engines": 1, "rollout_gpus_per_engine": 1,
     }:
         raise ValueError("hardware must use one GPU for sync and two for async")
@@ -91,15 +91,15 @@ def validate_experiment(config: dict[str, Any]) -> None:
 
     production = config.get("production", {})
     expected_production = {
-        "prepared_data_version": "balanced-700-v2",
-        "lean_workbook_examples": 350,
-        "proofnet_verified_examples": 350,
-        "passes_per_dataset": 2,
-        "processed_example_budget": 1400,
-        "num_rollouts": 175,
+        "prepared_data_version": "balanced-600-v3",
+        "lean_workbook_examples": 300,
+        "proofnet_verified_examples": 300,
+        "passes_per_dataset": 1,
+        "processed_example_budget": 600,
+        "num_rollouts": 75,
         "scalar_log_every_examples": 10,
-        "checkpoint_every_examples": 100,
-        "evaluation_every_examples": 100,
+        "checkpoint_every_examples": 200,
+        "evaluation_every_examples": 200,
         "timeout_seconds": 86400,
     }
     if production != expected_production:
@@ -111,10 +111,15 @@ def validate_experiment(config: dict[str, Any]) -> None:
     if unique_examples * production["passes_per_dataset"] != production["processed_example_budget"]:
         raise ValueError("production budget must equal unique examples times passes")
 
+    if rollout.get("server_concurrency_per_engine") != 8:
+        raise ValueError("training concurrency must be 8")
+
     evaluation = config.get("evaluation", {})
     if evaluation != {
         "samples_per_prompt": 1,
         "max_response_tokens": 16384,
+        "server_concurrency_per_engine": 16,
+        "selection_problems_per_dataset": 100,
         "temperature": 0.6,
         "top_p": 0.95,
         "top_k": 20,

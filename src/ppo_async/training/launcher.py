@@ -216,7 +216,8 @@ def build_train_command(
                 "ppo_async.training.tracking.log_rollout_scalars",
                 "--custom-eval-rollout-log-function-path",
                 "ppo_async.training.tracking.log_eval_scalars",
-                "--eval-function-path", "slime.rollout.sglang_rollout.generate_rollout",
+                "--eval-function-path", "ppo_async.training.evaluation.generate_rollout",
+                "--eval-concurrency", str(evaluation["server_concurrency_per_engine"]),
                 "--eval-prompt-data",
                 "gaokao-formal", str(eval_paths["gaokao-formal"]),
                 "fate-m", str(eval_paths["fate-m"]),
@@ -239,7 +240,10 @@ def build_train_command(
         )
     command.extend(["--offload-train", "--num-gpus-per-node", "1" if arm == "sync_ppo" else "2"])
     if arm == "sync_ppo":
-        command.extend(["--colocate", "--rollout-sample-hook-path",
+        # Checkpointing releases and resumes SGLang without republishing.
+        # Preserve weights: memory-saver resume alone only reallocates storage.
+        command.extend(["--colocate", "--sglang-enable-weights-cpu-backup",
+                        "--rollout-sample-hook-path",
                         "ppo_async.training.hooks.audit_policy_version"])
     else:
         command.extend(["--data-source-path", "ppo_async.training.stream.StreamDataSource",
