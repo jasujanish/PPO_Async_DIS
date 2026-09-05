@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
 from pathlib import Path
 import re
 import subprocess
 import tempfile
 import time
+import uuid
 
 from ppo_async.data import theorem_signature
 
 
 FORBIDDEN_PROOF_TOKEN = re.compile(
-    r"\b(?:sorry|admit|axiom|unsafe|native_decide|run_tac|implemented_by|extern)\b",
+    r"\b(?:sorry|sorryAx|admit|axiom|unsafe|native_decide|run_tac|implemented_by|extern)\b",
     re.IGNORECASE,
 )
 DECLARATION_NAME = re.compile(r"^(?:theorem|lemma)\s+([^\s({:]+)", re.DOTALL)
@@ -77,14 +79,18 @@ def theorem_name(formal_statement: str) -> str:
     return match.group(1)
 
 
-def render_candidate(formal_statement: str, preamble: str, proof: str) -> str:
+def render_candidate(
+    formal_statement: str, preamble: str, proof: str, *, nonce: str = "test"
+) -> str:
     context = preamble.strip() or "import Mathlib"
     name = theorem_name(formal_statement)
     return (
-        f"{context}\n\n"
+        f"import Lean\n{context}\n\n"
+        + Path(__file__).with_name("Verifier.lean").read_text(encoding="utf-8")
+        + "\n\n"
         "set_option maxHeartbeats 400000 in\n"
-        f"{theorem_signature(formal_statement)} := {proof}\n\n"
-        f"#print axioms {name}\n"
+        f"{theorem_signature(formal_statement)} := ppo_proof {json.dumps(proof, ensure_ascii=False)}\n\n"
+        f"ppo_audit {name} {json.dumps(nonce)}\n"
     )
 
 
@@ -109,9 +115,10 @@ def verify_proof(
             f"forbidden proof token: {forbidden.group(0)}",
             time.monotonic() - started,
         )
+    nonce = uuid.uuid4().hex
     try:
-        source = render_candidate(formal_statement, preamble, proof)
-    except ValueError as exc:
+        source = render_candidate(formal_statement, preamble, proof, nonce=nonce)
+    except (ValueError, OSError) as exc:
         return VerificationResult("infrastructure_error", proof, str(exc), time.monotonic() - started)
 
     project_map = LEAN_PROJECTS if projects is None else projects
@@ -138,8 +145,12 @@ def verify_proof(
             text=True,
             timeout=timeout_seconds,
         )
-        output = (completed.stdout + completed.stderr)[-12_000:]
-        status = "verified" if completed.returncode == 0 else "rejected"
+        full_output = completed.stdout + completed.stderr
+        output = full_output[-12_000:]
+        audited = f"PPO_ASYNC_VERIFIED {nonce}" in full_output
+        status = "verified" if completed.returncode == 0 and audited else "rejected"
+        if completed.returncode == 0 and not audited:
+            output += "\nmissing successful theorem axiom audit"
         return VerificationResult(status, proof, output, time.monotonic() - started)
     except subprocess.TimeoutExpired as exc:
         return VerificationResult("rejected", proof, f"Lean timeout: {exc}", time.monotonic() - started)

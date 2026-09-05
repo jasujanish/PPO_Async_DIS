@@ -15,6 +15,8 @@ from pathlib import Path
 import shutil
 from typing import Any
 
+from ppo_async.training.hooks import learner_updates_before, write_policy_versions
+
 
 def role_slices(total_gpus: int = 4) -> dict[str, tuple[int, ...]]:
     if total_gpus != 4:
@@ -140,7 +142,10 @@ def _initialize(args: Any):
     if critic_model is None:
         raise RuntimeError("PPO must create a critic model")
     actor_model.update_weights()
-    _event("weight_publish", published_version=1, learner_updates=0)
+    version = int(getattr(args, "update_weight_start_version", 0)) + 1
+    updates = learner_updates_before(args, args.start_rollout_id)
+    write_policy_versions({version: updates})
+    _event("weight_publish", published_version=version, learner_updates=updates)
     if args.check_weight_update_equal:
         ray.get(rollout_manager.check_weights.remote(action="compare"))
     return rollout_manager, num_rollout_per_epoch, actor_model, critic_model
@@ -232,6 +237,8 @@ def train_synchronous(args: Any) -> None:
     from slime.observability.logging_utils import finish_tracking
 
     rollout_manager, per_epoch, actor_model, critic_model = _initialize(args)
+    published_version = int(getattr(args, "update_weight_start_version", 0)) + 1
+    versions = {published_version: learner_updates_before(args, args.start_rollout_id)}
     try:
         for rollout_id in range(args.start_rollout_id, args.num_rollout):
             data = ray.get(rollout_manager.generate.remote(rollout_id))
@@ -240,10 +247,13 @@ def train_synchronous(args: Any) -> None:
                 args, rollout_id, data, actor_model, critic_model
             )
             actor_model.update_weights()
+            published_version += 1
+            versions[published_version] = learner_updates_before(args, rollout_id + 1)
+            write_policy_versions(versions)
             _event(
                 "weight_publish",
-                published_version=rollout_id + 2,
-                learner_updates=rollout_id + 1,
+                published_version=published_version,
+                learner_updates=versions[published_version],
             )
             _evaluate_if_due(args, rollout_id, rollout_manager)
             # Checkpoint last: the dataset cursor, actor/critic/optimizer,
@@ -269,9 +279,17 @@ def train_asynchronous(args: Any) -> None:
 
     rollout_manager, per_epoch, actor_model, critic_model = _initialize(args)
     publish_interval = int(os.environ["PPO_ASYNC_PUBLISH_INTERVAL"])
-    published_version = 1
-    learner_updates = 0
-    next_future = rollout_manager.generate.remote(args.start_rollout_id)
+    max_lag = int(os.environ["PPO_ASYNC_MAX_POLICY_LAG"])
+    published_version = int(getattr(args, "update_weight_start_version", 0)) + 1
+    learner_updates = learner_updates_before(args, args.start_rollout_id)
+    published_updates = learner_updates
+    versions = {published_version: published_updates}
+    # A retry after the final committed checkpoint must not consume a third
+    # pass's first batch while merely rebuilding the completion report.
+    next_future = (
+        rollout_manager.generate.remote(args.start_rollout_id)
+        if args.start_rollout_id < args.num_rollout else None
+    )
     prefetched_data = None
     try:
         for rollout_id in range(args.start_rollout_id, args.num_rollout):
@@ -288,7 +306,10 @@ def train_asynchronous(args: Any) -> None:
             action_due = _crosses_interval(
                 args, rollout_id, getattr(args, "checkpoint_every_examples", None)
             ) or _evaluation_due(args, rollout_id)
-            if rollout_id + 1 < args.num_rollout and not action_due:
+            # Do not prefetch with weights that will be too old at consumption.
+            # In that case, finish this update and publish before generating.
+            next_lag = learner_updates_before(args, rollout_id + 1) - published_updates
+            if rollout_id + 1 < args.num_rollout and not action_due and next_lag <= max_lag:
                 next_future = rollout_manager.generate.remote(rollout_id + 1)
                 _event("rollout_batch_started", rollout_id=rollout_id + 1)
 
@@ -297,7 +318,7 @@ def train_asynchronous(args: Any) -> None:
             )
             learner_updates += int(actor_trains)
             final_step = rollout_id == args.num_rollout - 1
-            if final_step or action_due or (rollout_id + 1) % publish_interval == 0:
+            if final_step or action_due or next_lag > max_lag or (rollout_id + 1) % publish_interval == 0:
                 # SLIME must never mutate SGLang weights midway through a
                 # trajectory. Finish the already-overlapped batch first.
                 if next_future is not None:
@@ -305,6 +326,9 @@ def train_asynchronous(args: Any) -> None:
                     next_future = None
                 actor_model.update_weights()
                 published_version += 1
+                published_updates = learner_updates
+                versions[published_version] = published_updates
+                write_policy_versions(versions)
                 _event(
                     "weight_publish",
                     published_version=published_version,

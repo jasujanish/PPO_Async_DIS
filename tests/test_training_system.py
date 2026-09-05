@@ -14,7 +14,8 @@ from ppo_async.training.dis import apply_dis_mask, observe_importance
 from ppo_async.training.driver import _crosses_interval, _processed_examples, role_slices
 from ppo_async.training.hooks import (
     audit_policy_version,
-    policy_lag_for_rollout,
+    policy_lag,
+    write_policy_versions,
     single_policy_version,
 )
 from ppo_async.training.launcher import build_train_command
@@ -168,23 +169,30 @@ def test_slime_dis_hook_masks_loss_but_observer_does_not(monkeypatch) -> None:
     assert metrics["dis_masked"].tolist() == [1.0, 0.0, 1.0]
 
 
-def test_policy_versions_and_lag_are_audited(monkeypatch) -> None:
+def test_policy_versions_and_lag_are_audited(tmp_path, monkeypatch) -> None:
+    from types import SimpleNamespace
+
     assert single_policy_version(["3", "3"]) == 3
     with pytest.raises(ValueError, match="exactly one"):
         single_policy_version(["3", "4"])
-    assert [policy_lag_for_rollout(index, 2) for index in range(4)] == [0, 1, 0, 1]
-
-    sample = type(
-        "SampleStub",
-        (),
-        {"weight_versions": ["7"], "metadata": {}, "remove_sample": False},
-    )()
-    monkeypatch.setenv("PPO_ASYNC_PUBLISH_INTERVAL", "2")
-    monkeypatch.setenv("PPO_ASYNC_MAX_POLICY_LAG", "0")
-    audit_policy_version(None, sample, rollout_id=1)
-    assert sample.metadata["behavior_policy_version"] == 7
-    assert sample.metadata["policy_lag_updates"] == 1
-    assert sample.remove_sample
+    assert policy_lag(12, 10) == 2
+    monkeypatch.setenv("PPO_ASYNC_POLICY_VERSIONS", str(tmp_path / "versions.json"))
+    monkeypatch.setenv("PPO_ASYNC_MAX_POLICY_LAG", "1")
+    write_policy_versions({7: 10, 8: 12})
+    args = SimpleNamespace(num_critic_only_steps=0)
+    stale = SimpleNamespace(weight_versions=["7"], metadata={}, remove_sample=False)
+    audit_policy_version(args, stale, rollout_id=12)
+    assert stale.metadata["behavior_policy_version"] == 7
+    assert stale.metadata["policy_lag_updates"] == 2
+    assert stale.remove_sample
+    fresh = SimpleNamespace(weight_versions=["8"], metadata=None, remove_sample=False)
+    audit_policy_version(args, fresh, rollout_id=12)
+    assert fresh.metadata["policy_lag_updates"] == 0
+    assert not fresh.remove_sample
+    unknown = SimpleNamespace(weight_versions=["99"], metadata={}, remove_sample=False)
+    audit_policy_version(args, unknown, rollout_id=12)
+    assert unknown.remove_sample
+    assert "policy_version_error" in unknown.metadata
 
 
 def test_launcher_selects_three_distinct_loops() -> None:
@@ -212,6 +220,7 @@ def test_launcher_selects_three_distinct_loops() -> None:
         assert built[built.index("--rollout-num-gpus") + 1] == "2"
         assert "--colocate" not in built
         assert "Qwen3.5-4B" not in " ".join(built)  # model is supplied by checkpoint path
+        assert built[built.index("--rollout-max-response-len") + 1] == "16384"
         assert built[built.index("--max-tokens-per-gpu") + 1] == "4096"
         assert built[built.index("--log-probs-chunk-size") + 1] == "1024"
         assert built[built.index("--save-hf") + 1] == "/artifacts/run/hf-{rollout_id}"
@@ -219,7 +228,7 @@ def test_launcher_selects_three_distinct_loops() -> None:
         assert "--overlap-cpu-optimizer-d2h-h2d" in built
         assert "--use-precision-aware-optimizer" in built
     assert "--rollout-function-path" not in sync
-    assert "--rollout-function-path" in asynchronous
+    assert "--rollout-function-path" not in asynchronous
     assert "--use-rollout-logprobs" in sync
     assert "--use-rollout-logprobs" in asynchronous
     assert "--use-tis" not in asynchronous
@@ -237,7 +246,7 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
         prompt_data=Path("/data/train-final.jsonl"),
         role_config=Path("/tmp/roles.json"),
         artifact_root=Path("/artifacts/final"),
-        num_rollouts=25,
+        num_rollouts=175,
         config=config,
         production=True,
         eval_paths={
@@ -246,37 +255,35 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
         },
         load_checkpoint=Path("/artifacts/final/checkpoints/actor"),
     )
-    assert command[command.index("--rollout-batch-size") + 1] == "16"
-    assert command[command.index("--global-batch-size") + 1] == "16"
-    assert command[command.index("--processed-example-budget") + 1] == "400"
+    assert command[command.index("--rollout-batch-size") + 1] == "8"
+    assert command[command.index("--global-batch-size") + 1] == "8"
+    assert command[command.index("--processed-example-budget") + 1] == "1400"
     assert command[command.index("--scalar-log-every-examples") + 1] == "10"
     assert command[command.index("--checkpoint-every-examples") + 1] == "100"
     assert command[command.index("--evaluation-every-examples") + 1] == "100"
+    assert command[command.index("--eval-max-response-len") + 1] == "16384"
     assert command[command.index("--load") + 1] == "/artifacts/final/checkpoints/actor"
     assert "--eval-prompt-data" in command
     assert "slime.rollout.sglang_rollout.generate_rollout" in command
     assert "slime.rollout.fully_async_rollout.generate_rollout_fully_async" not in command
-    assert command[command.index("--save-interval") + 1] == "26"
+    assert command[command.index("--save-interval") + 1] == "176"
     assert "--ci-test" not in command
     assert "--no-save-optim" not in command
 
 
-def test_batch_sixteen_actions_cross_each_hundred_example_threshold() -> None:
-    args = type(
-        "Args",
-        (),
-        {
-            "rollout_batch_size": 16,
-            "n_samples_per_prompt": 1,
-            "processed_example_budget": 400,
-            "num_rollout": 25,
-        },
-    )()
-    due = [rollout_id for rollout_id in range(25) if _crosses_interval(args, rollout_id, 100)]
-    assert len(due) == 4
-    assert due[:4] == [6, 12, 18, 24]
-    assert due[-1] == 24
-    assert [_processed_examples(args, rollout_id) for rollout_id in due[:4]] == [112, 208, 304, 400]
+def test_batch_eight_actions_cross_each_hundred_example_threshold() -> None:
+    from types import SimpleNamespace
+
+    args = SimpleNamespace(
+        rollout_batch_size=8, n_samples_per_prompt=1,
+        processed_example_budget=1400, num_rollout=175,
+    )
+    due = [i for i in range(175) if _crosses_interval(args, i, 100)]
+    assert len(due) == 14
+    assert due[:4] == [12, 24, 37, 49]
+    assert due[-1] == 174
+    assert [_processed_examples(args, i) for i in due[:4]] == [104, 200, 304, 400]
+    assert _processed_examples(args, due[-1]) == 1400
 
 
 def test_scalar_tracking_writes_exact_ten_example_windows(tmp_path: Path, monkeypatch) -> None:

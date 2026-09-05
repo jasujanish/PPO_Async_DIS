@@ -236,16 +236,8 @@ def build_train_command(
                 "--ci-disable-kl-checker",
             ]
         )
-    # Production async runs use the driver's one-batch lookahead. Unlike
-    # SLIME's continuously-prefetching worker, this gives checkpoint-aligned
-    # dataset cursors and leaves the rollout engines quiescent for evaluation.
-    if selected_arm["fully_async_rollout"] and not production:
-        command.extend(
-            [
-                "--rollout-function-path",
-                "slime.rollout.fully_async_rollout.generate_rollout_fully_async",
-            ]
-        )
+    # All arms use batch-bounded generation. The driver owns async lookahead
+    # so weight publication cannot race a continuously replenished worker.
     if selected_arm["dis"]:
         # SLIME's TIS path recomputes the learner-policy log-probabilities and
         # compares them with rollout_log_probs.  Its validator deliberately

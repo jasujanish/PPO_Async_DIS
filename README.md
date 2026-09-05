@@ -4,7 +4,7 @@ PPO_ASYNC compares three reinforcement-learning systems for Lean 4 theorem
 proving with `Qwen/Qwen3.5-4B`:
 
 1. synchronous, on-policy PPO;
-2. asynchronous PPO with continuously replenished SGLang rollouts;
+2. asynchronous PPO with one-batch SGLang lookahead;
 3. the same asynchronous PPO system with Direct Double-Sided Importance
    Sampling (DIS).
 
@@ -24,11 +24,12 @@ substitution cannot silently change the experiment.
 
 ## Data contract
 
-The final one-pass curriculum contains:
+The final curriculum contains 700 unique problems, each visited twice with
+freshly generated proofs (1,400 total training attempts):
 
-- the first 1,633 retained `internlm/Lean-Workbook` rows, after requiring
+- the first 350 retained `internlm/Lean-Workbook` rows, after requiring
   `status == "proved"`;
-- the first 367 retained `marcusm117/ProofNet-Verified` rows.
+- the first 350 retained `marcusm117/ProofNet-Verified` rows.
 
 Evaluation uses only:
 
@@ -66,27 +67,41 @@ uv run prepare-ppo-data \
 The smoke curriculum contains eight Lean-Workbook and eight ProofNet-Verified
 problems. The command refuses limits of 100 or more.
 
-Prepare the immutable 2,000-example final curriculum and both complete
+Prepare the immutable 700-example final curriculum and both complete
 evaluation suites:
 
 ```bash
 uv run prepare-ppo-data \
   --mode final \
-  --output-root prepared_data/final-v1
+  --output-root prepared_data/balanced-700-v2
 ```
 
 `data-report.json` records content hashes, source counts, exclusions, and the
-one-pass selection contract. The prepared prompt files contain no reference
+two-pass training contract. The prepared prompt files contain no reference
 proof fields.
 
 ## Training loops
 
 All arms use the same actor, critic, sparse kernel-verification reward, prompt
 stream, optimizer, batch sizes, and two SGLang engines. SGLang behavior-token
-log-probabilities are stored on each trajectory and used as PPO's old policy.
+log-probabilities are stored on each trajectory. The standard PPO arms use them
+as PPO's old policy; DIS uses SLIME's TIS path with a recomputed learner-policy
+baseline. This baseline difference remains part of the current DIS comparison.
 Prompt, padding, and non-action tokens are excluded from policy/value losses.
 Verifier infrastructure failures remove a trajectory rather than assigning a
 zero reward.
+
+Training rollouts and in-run evaluation permit up to 16,384 response tokens.
+The 4,096-token dynamic packing target is not a response cap: SLIME places
+longer individual samples alone in a microbatch. Peak memory for 16k responses
+still requires validation on the four-H100 integration run.
+
+Training and standalone evaluation share `lean.py` and `Verifier.lean`. The
+candidate is parsed as exactly one Lean term. After elaboration, a trusted
+command traverses the theorem's transitive axiom dependencies and permits only
+`propext`, `Classical.choice`, and `Quot.sound`. Direct `sorryAx` is also
+rejected before compilation. A zero compiler exit code without a successful
+axiom-audit marker is rejected.
 
 ### Synchronous PPO
 
@@ -102,11 +117,16 @@ current batch before publishing weights. This keeps the global dataset cursor
 identical to the number of trained examples and makes retries exact. Weight
 versions are immutable within each trajectory. The configured publish cadence
 permits at most one learner-update of policy lag; older trajectories are
-loss-masked and recorded.
+loss-masked and recorded. Lag is calculated from a mapping of actual SGLang
+weight versions to completed learner updates, evaluated for the batch's
+consumption point. Before prefetching, the driver checks the next batch's
+projected lag and delays generation until after publication if necessary. The
+version mapping resets after a container restart while the learner count
+resumes from the checkpoint. Smoke and production both use bounded generation.
 
 ### Asynchronous PPO + DIS
 
-This arm is identical to asynchronous PPO except for the actor-gradient mask.
+This arm uses the asynchronous schedule and SLIME's TIS path with a custom actor-gradient mask.
 For each action token:
 
 ```text
@@ -129,23 +149,29 @@ git diff --check
 
 The test suite checks all three command paths, physical GPU isolation, exact
 data filtering, proof non-leakage, action-only GAE, behavior-policy accounting,
-asymmetric open-interval DIS masking, and the paid-run example bound.
+asymmetric open-interval DIS masking, and the training budget. Real verifier
+regressions can run against installed Lean binaries in all three versions:
+
+```bash
+PPO_ASYNC_TEST_LEAN_BINARIES=/path/to/lean48:/path/to/lean427:/path/to/lean428 \
+  uv run pytest -q tests/test_lean_verifier.py
+```
 
 ## Four-H100 smoke run
 
-The authorized integration smoke uses 16 training examples and one rollout:
+This integration smoke processes 16 training examples in two batches of 8:
 
 ```bash
 uv run modal run modal_train.py \
   --arm sync-ppo \
   --training-examples 16 \
-  --num-rollouts 1 \
-  --run-name smoke-sync-ppo-16-v1
+  --num-rollouts 2 \
+  --run-name smoke-sync-ppo-16-16k-v2
 ```
 
 The remote function attests four visible H100s before downloading or training,
 materializes the exact prompt set, converts the pinned checkpoint, starts Ray,
-launches one actor, one critic, and two SGLang engines, performs the PPO update,
+launches one actor, one critic, and two SGLang engines, performs the PPO updates,
 and writes commands, hardware inventory, trajectories, metrics, checkpoints,
 Hugging Face exports, and a completion report to `ppo-async-artifacts`.
 
@@ -154,11 +180,14 @@ To exercise another arm after the first integration gate passes, change
 
 ## Full final runs
 
-All final arms use rollout batch 8 and global learner batch 8 for exactly 250
-updates (2,000 processed examples). Scalar rollout metrics are aggregated into
-exact 10-example windows. Because batch 8 does not divide 100, checkpoint,
+All final arms use rollout batch 8 and global learner batch 8 for exactly 175
+updates (1,400 processed examples). Scalar rollout metrics are aggregated into
+exact 10-example windows. The prompt file stores each of the 700 theorems once;
+SLIME reshuffles at the second pass, including a batch spanning the pass boundary,
+and restores both epoch and position on resume. Batches of 8 divide the
+1,400-attempt budget exactly. Because batch 8 does not divide 100, checkpoint,
 evaluation, and export actions run after the first completed batch crossing
-each 100-example threshold: 104, 200, 304, 400, and so on through 2,000.
+each 100-example threshold: 104, 200, 304, 400, and so on through 1,400.
 
 Every action boundary contains a resumable actor, critic, optimizer, and global
 dataset cursor checkpoint; complete Gaokao-Formal and FATE-M pass@1 records;
@@ -177,11 +206,13 @@ runs a CPU-only parse preflight for all pinned SLIME/Megatron commands:
 uv run modal deploy modal_train.py
 uv run python launch_final.py \
   --arm all \
-  --run-prefix final-qwen35-4b-b8-v1
+  --run-prefix balanced700-2pass-qwen35-4b-h100-b8-v2
 ```
 
 The arm name is appended to each artifact directory. A single arm can also be
-submitted by passing `sync-ppo`, `async-ppo`, or `async-ppo-dis`.
+submitted by passing `sync-ppo`, `async-ppo`, or `async-ppo-dis`. Without
+`--arm`, the launcher selects DIS and synchronous PPO. Use fresh run names for
+this experiment; checkpoints from the old curriculum are incompatible.
 
 ## Standalone evaluation
 

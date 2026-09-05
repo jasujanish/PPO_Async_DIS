@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "ppo-async-qwen35-4b-v1",
+  "experiment_id": "ppo-async-qwen35-4b-balanced700-2pass-v2",
   "model": {
     "id": "Qwen/Qwen3.5-4B",
     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
@@ -77,12 +77,12 @@
     "dis_epsilon_high": 5.0
   },
   "rollout": {
-    "batch_size": 16,
+    "batch_size": 8,
     "samples_per_prompt": 1,
-    "global_batch_size": 16,
+    "global_batch_size": 8,
     "max_train_tokens_per_gpu": 4096,
     "log_probs_chunk_size": 1024,
-    "max_response_tokens": 2048,
+    "max_response_tokens": 16384,
     "max_prompt_tokens": 8192,
     "temperature": 0.8,
     "top_p": 0.95,
@@ -92,18 +92,18 @@
   },
   "evaluation": {
     "samples_per_prompt": 1,
-    "max_response_tokens": 2048,
+    "max_response_tokens": 16384,
     "temperature": 0.6,
     "top_p": 0.95,
     "top_k": 20
   },
   "production": {
-    "prepared_data_version": "balanced-400-v1",
-    "lean_workbook_examples": 200,
-    "proofnet_verified_examples": 200,
-    "passes_per_dataset": 1,
-    "processed_example_budget": 400,
-    "num_rollouts": 25,
+    "prepared_data_version": "balanced-700-v2",
+    "lean_workbook_examples": 350,
+    "proofnet_verified_examples": 350,
+    "passes_per_dataset": 2,
+    "processed_example_budget": 1400,
+    "num_rollouts": 175,
     "scalar_log_every_examples": 10,
     "checkpoint_every_examples": 100,
     "evaluation_every_examples": 100,

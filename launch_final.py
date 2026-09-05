@@ -28,7 +28,7 @@ def _safe_prefix(value: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-prefix", default="balanced400-qwen35-4b-h100-b16-v1")
+    parser.add_argument("--run-prefix", default="balanced700-2pass-qwen35-4b-h100-b8-v2")
     parser.add_argument(
         "--arm",
         choices=("selected", "all", "sync-ppo", "async-ppo", "async-ppo-dis"),

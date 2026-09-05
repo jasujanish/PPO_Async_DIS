@@ -141,8 +141,13 @@ def _prepared_production_data() -> dict[str, Any]:
     }
     if report.get("mode") != "production" or report.get("training_by_source") != expected_counts:
         raise RuntimeError("embedded production data does not match the experiment contract")
-    if report.get("training_examples") != production["processed_example_budget"]:
+    if report.get("training_examples") != sum(expected_counts.values()):
         raise RuntimeError("embedded production data has the wrong training size")
+    if (
+        report.get("selection", {}).get("passes_per_dataset") != production["passes_per_dataset"]
+        or report.get("processed_example_budget") != production["processed_example_budget"]
+    ):
+        raise RuntimeError("embedded production data has the wrong pass/budget contract")
     paths = {
         "train": root / "train-final.jsonl",
         "gaokao-formal": root / "eval-gaokao-formal.jsonl",
@@ -153,6 +158,22 @@ def _prepared_production_data() -> dict[str, Any]:
         if not path.is_file() or _sha256(path) != expected:
             raise RuntimeError(f"embedded production data hash mismatch: {name}")
     return {"report": report, "paths": paths}
+
+
+def _ensure_run_contract(run_root: Path, arm: str, data_report: dict[str, Any]) -> None:
+    """Prevent resuming old data, token limits, or a different arm by run name."""
+    expected = {"experiment": EXPERIMENT, "arm": arm, "data_sha256": data_report["sha256"]}
+    path = run_root / "run-contract.json"
+    if path.is_file():
+        if json.loads(path.read_text(encoding="utf-8")) != expected:
+            raise RuntimeError("run contract changed; use a fresh run name")
+        return
+    if run_root.exists() and any(run_root.iterdir()):
+        raise RuntimeError("existing run has no compatible contract; use a fresh run name")
+    run_root.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(expected, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def _tracker_rollout_id(path: Path) -> int | None:
@@ -335,6 +356,7 @@ def train_smoke(
         "PPO_ASYNC_DIS_EPSILON_LOW": str(EXPERIMENT["ppo"]["dis_epsilon_low"]),
         "PPO_ASYNC_DIS_EPSILON_HIGH": str(EXPERIMENT["ppo"]["dis_epsilon_high"]),
         "PPO_ASYNC_EVENT_LOG": str(run_root / "events.jsonl"),
+        "PPO_ASYNC_POLICY_VERSIONS": str(run_root / "tracking" / "policy-versions.json"),
     }
     if not tracker.is_file():
         converted.parent.mkdir(parents=True, exist_ok=True)
@@ -492,7 +514,7 @@ def train_final(
     arm: str,
     run_name: str,
 ) -> dict[str, Any]:
-    """Run one resumable, exact-one-pass production experiment arm."""
+    """Run one resumable, exact-two-pass production experiment arm."""
     sys.path.insert(0, str(REMOTE_ROOT / "src"))
     sys.path.insert(0, "/root/slime")
     from ppo_async.training.artifacts import validate_production_artifacts
@@ -506,11 +528,12 @@ def train_final(
     run_name = _safe_run_name(run_name)
     run_root = Path("/vol/artifacts") / run_name
     completion_path = run_root / "RUN_COMPLETE.json"
+    prepared = _prepared_production_data()
+    _ensure_run_contract(run_root, arm, prepared["report"])
     if completion_path.is_file():
         return json.loads(completion_path.read_text(encoding="utf-8"))
     run_root.mkdir(parents=True, exist_ok=True)
 
-    prepared = _prepared_production_data()
     hardware = _hardware_inventory()
     hf_checkpoint = _download_model()
     converted = Path("/vol/model-cache/torch-dist") / MODEL_REVISION
@@ -572,6 +595,7 @@ def train_final(
         "PPO_ASYNC_DIS_EPSILON_LOW": str(EXPERIMENT["ppo"]["dis_epsilon_low"]),
         "PPO_ASYNC_DIS_EPSILON_HIGH": str(EXPERIMENT["ppo"]["dis_epsilon_high"]),
         "PPO_ASYNC_EVENT_LOG": str(run_root / "events.jsonl"),
+        "PPO_ASYNC_POLICY_VERSIONS": str(run_root / "tracking" / "policy-versions.json"),
         "PPO_ASYNC_METRICS_LOG": str(run_root / "metrics.jsonl"),
         "PPO_ASYNC_EVALUATION_LOG": str(run_root / "evaluations.jsonl"),
         "PPO_ASYNC_TRACKING_STATE": str(run_root / "tracking" / "state.json"),
@@ -634,7 +658,8 @@ def train_final(
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "resumed_after_rollout": boundary,
         "hardware": hardware,
-        "training_examples": production["processed_example_budget"],
+        "training_examples": sum(prepared["report"]["training_by_source"].values()),
+        "processed_examples": production["processed_example_budget"],
         "passes_per_dataset": production["passes_per_dataset"],
         "data_sha256": prepared["report"]["sha256"],
         "verified_artifacts": artifacts,

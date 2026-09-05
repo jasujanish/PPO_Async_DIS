@@ -13,12 +13,16 @@ from pathlib import Path
 import re
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any
 from urllib.request import urlopen
 
 import modal
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+from ppo_async.lean import verify_proof as verify_lean_proof
 
 APP_NAME = "ppo-async-qwen35-evaluation"
 DATASET_ID = "internlm/Lean-Workbook"
@@ -206,11 +210,13 @@ sglang_image = (
     )
     .env(
         {
+            "PYTHONPATH": "/workspace/PPO_ASYNC/src",
             "HF_HOME": "/vol/huggingface",
             "HF_HUB_CACHE": "/vol/huggingface/hub",
             "HF_XET_HIGH_PERFORMANCE": "1",
         }
     )
+    .add_local_dir("src", remote_path="/workspace/PPO_ASYNC/src", copy=True)
 )
 
 lean_image_v48 = (
@@ -221,7 +227,10 @@ lean_image_v48 = (
         "curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | "
         "sh -s -- -y --default-toolchain leanprover/lean4:v4.8.0-rc1"
     )
-    .env({"PATH": "/root/.elan/bin:/usr/local/bin:/usr/bin:/bin"})
+    .env({
+        "PATH": "/root/.elan/bin:/usr/local/bin:/usr/bin:/bin",
+        "PYTHONPATH": "/workspace/PPO_ASYNC/src",
+    })
     .add_local_dir("lean_env", remote_path="/lean-project", copy=True)
     .run_commands(
         "cd /lean-project && lake update",
@@ -234,6 +243,7 @@ lean_image_v48 = (
     )
     # Dataset changes now invalidate only this final, inexpensive image layer.
     .add_local_dir("data", remote_path="/benchmark-data", copy=True)
+    .add_local_dir("src", remote_path="/workspace/PPO_ASYNC/src", copy=True)
 )
 
 lean_image_v428 = (
@@ -244,7 +254,10 @@ lean_image_v428 = (
         "curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | "
         "sh -s -- -y --default-toolchain leanprover/lean4:v4.28.0"
     )
-    .env({"PATH": "/root/.elan/bin:/usr/local/bin:/usr/bin:/bin"})
+    .env({
+        "PATH": "/root/.elan/bin:/usr/local/bin:/usr/bin:/bin",
+        "PYTHONPATH": "/workspace/PPO_ASYNC/src",
+    })
     .add_local_dir("lean_env_v428", remote_path="/lean-project", copy=True)
     .run_commands(
         "cd /lean-project && lake update",
@@ -253,6 +266,7 @@ lean_image_v428 = (
         "cd /lean-project && lake env lean Smoke.lean",
     )
     .add_local_dir("data", remote_path="/benchmark-data", copy=True)
+    .add_local_dir("src", remote_path="/workspace/PPO_ASYNC/src", copy=True)
 )
 
 lean_image_v427 = (
@@ -263,7 +277,10 @@ lean_image_v427 = (
         "curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | "
         "sh -s -- -y --default-toolchain leanprover/lean4:v4.27.0"
     )
-    .env({"PATH": "/root/.elan/bin:/usr/local/bin:/usr/bin:/bin"})
+    .env({
+        "PATH": "/root/.elan/bin:/usr/local/bin:/usr/bin:/bin",
+        "PYTHONPATH": "/workspace/PPO_ASYNC/src",
+    })
     .add_local_dir("lean_env_v427", remote_path="/lean-project", copy=True)
     .run_commands(
         "cd /lean-project && lake update",
@@ -272,6 +289,7 @@ lean_image_v427 = (
         "cd /lean-project && lake env lean Smoke.lean",
     )
     .add_local_dir("data", remote_path="/benchmark-data", copy=True)
+    .add_local_dir("src", remote_path="/workspace/PPO_ASYNC/src", copy=True)
 )
 
 
@@ -370,6 +388,7 @@ def verifier_config(dataset_name: str = "lean-workbook") -> dict[str, Any]:
         "memory_mb": VERIFY_MEMORY_MB,
         "timeout_seconds": LEAN_TIMEOUT_SECONDS,
         "max_heartbeats": LEAN_MAX_HEARTBEATS,
+        "proof_check": "single-term-transitive-axiom-audit-v2",
     }
 
 
@@ -1094,72 +1113,37 @@ def generate(
     return config
 
 
-FORBIDDEN_PROOF_TOKEN = re.compile(r"\b(?:sorry|admit|axiom)\b", re.IGNORECASE)
-
-
 def verify_one(record: dict[str, Any], work_dir: Path) -> dict[str, Any]:
+    """Use the same term parser and transitive axiom audit as training rewards."""
+    del work_dir  # The shared verifier owns unique temporary candidate files.
     result = dict(record)
     if record.get("error"):
         result.update({"verified": False, "verification_status": "generation_error"})
         return result
-
-    proof = extract_proof_expression(
-        record.get("content", ""), record.get("formal_statement")
+    verification = verify_lean_proof(
+        record["formal_statement"],
+        record.get("preamble", ""),
+        record.get("content", ""),
+        "benchmark",
+        projects={"benchmark": Path("/lean-project")},
+        timeout_seconds=LEAN_TIMEOUT_SECONDS,
     )
-    result["extracted_proof"] = proof
-    if not proof:
-        result.update({"verified": False, "verification_status": "empty_proof"})
-        return result
-    if FORBIDDEN_PROOF_TOKEN.search(proof):
-        result.update({"verified": False, "verification_status": "forbidden_token"})
-        return result
-
-    try:
-        signature = theorem_signature(record["formal_statement"])
-    except ValueError as exc:
-        result.update(
-            {
-                "verified": False,
-                "verification_status": "invalid_statement",
-                "lean_output": str(exc),
-            }
-        )
-        return result
-
-    preamble = record.get("preamble", "").strip() or "import Mathlib"
-    source = (
-        f"{preamble}\n\n"
-        f"set_option maxHeartbeats {LEAN_MAX_HEARTBEATS} in\n"
-        f"{signature} := {proof}\n"
-    )
-    source_path = work_dir / f"candidate_{record['index']:05d}.lean"
-    source_path.write_text(source, encoding="utf-8")
-    started = time.monotonic()
-    try:
-        completed = subprocess.run(
-            ["lake", "env", "lean", str(source_path)],
-            cwd="/lean-project",
-            capture_output=True,
-            text=True,
-            timeout=LEAN_TIMEOUT_SECONDS,
-        )
-        lean_output = (completed.stdout + completed.stderr)[-8000:]
-        verified = completed.returncode == 0
-        status = "verified" if verified else "lean_error"
-    except subprocess.TimeoutExpired as exc:
-        verified = False
-        status = "timeout"
-        lean_output = str(exc)
-    finally:
-        source_path.unlink(missing_ok=True)
-
+    status = verification.status
+    if status == "rejected":
+        if not verification.proof:
+            status = "empty_proof"
+        elif verification.diagnostics.startswith("forbidden proof token:"):
+            status = "forbidden_token"
+        elif verification.diagnostics.startswith("Lean timeout:"):
+            status = "timeout"
+        else:
+            status = "lean_error"
     result.update(
-        {
-            "verified": verified,
-            "verification_status": status,
-            "verification_seconds": time.monotonic() - started,
-            "lean_output": lean_output,
-        }
+        verified=verification.status == "verified",
+        verification_status=status,
+        extracted_proof=verification.proof,
+        lean_output=verification.diagnostics,
+        verification_seconds=verification.elapsed_seconds,
     )
     return result
 

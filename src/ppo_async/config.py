@@ -85,21 +85,23 @@ def validate_experiment(config: dict[str, Any]) -> None:
         raise ValueError("reference proofs must never appear in prompts")
 
     rollout = config.get("rollout", {})
-    if rollout.get("batch_size") != 16 or rollout.get("global_batch_size") != 16:
-        raise ValueError("production rollout and global batch sizes must both be 16")
+    if rollout.get("batch_size") != 8 or rollout.get("global_batch_size") != 8:
+        raise ValueError("production rollout and global batch sizes must both be 8")
+    if rollout.get("max_response_tokens") != 16384:
+        raise ValueError("training responses must allow 16384 tokens")
     if rollout.get("max_train_tokens_per_gpu") != 4096:
-        raise ValueError("Qwen3.5-4B must use the memory-safe 4096-token training pack")
+        raise ValueError("Qwen3.5-4B must use the 4096-token packing target (longer samples are packed alone)")
     if rollout.get("log_probs_chunk_size") != 1024:
         raise ValueError("Qwen3.5-4B must compute log probabilities in 1024-token chunks")
 
     production = config.get("production", {})
     expected_production = {
-        "prepared_data_version": "balanced-400-v1",
-        "lean_workbook_examples": 200,
-        "proofnet_verified_examples": 200,
-        "passes_per_dataset": 1,
-        "processed_example_budget": 400,
-        "num_rollouts": 25,
+        "prepared_data_version": "balanced-700-v2",
+        "lean_workbook_examples": 350,
+        "proofnet_verified_examples": 350,
+        "passes_per_dataset": 2,
+        "processed_example_budget": 1400,
+        "num_rollouts": 175,
         "scalar_log_every_examples": 10,
         "checkpoint_every_examples": 100,
         "evaluation_every_examples": 100,
@@ -110,10 +112,14 @@ def validate_experiment(config: dict[str, Any]) -> None:
     if production["num_rollouts"] * rollout["batch_size"] != production["processed_example_budget"]:
         raise ValueError("production rollouts must process exactly the configured example budget")
 
+    unique_examples = production["lean_workbook_examples"] + production["proofnet_verified_examples"]
+    if unique_examples * production["passes_per_dataset"] != production["processed_example_budget"]:
+        raise ValueError("production budget must equal unique examples times passes")
+
     evaluation = config.get("evaluation", {})
     if evaluation != {
         "samples_per_prompt": 1,
-        "max_response_tokens": 2048,
+        "max_response_tokens": 16384,
         "temperature": 0.6,
         "top_p": 0.95,
         "top_k": 20,
