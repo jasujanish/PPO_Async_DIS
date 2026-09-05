@@ -19,6 +19,7 @@ def test_lag_and_dataset_cursor_across_publications_and_resume(
         start_rollout_id=start, num_rollout=175, num_critic_only_steps=critic_only,
         rollout_batch_size=8, n_samples_per_prompt=1, processed_example_budget=1400,
         checkpoint_every_examples=100, evaluation_every_examples=100,
+        offload_rollout=not asynchronous,
     )
     versions_path = tmp_path / "versions.json"
     # A restarted container must not inherit an old engine's version mapping.
@@ -58,6 +59,9 @@ def test_lag_and_dataset_cursor_across_publications_and_resume(
     manager = SimpleNamespace(
         generate=SimpleNamespace(remote=generate),
         dispose=SimpleNamespace(remote=lambda: None),
+        offload=SimpleNamespace(remote=lambda: None),
+        onload_weights=SimpleNamespace(remote=lambda: None),
+        onload_kv=SimpleNamespace(remote=lambda: None),
     )
     actor = SimpleNamespace(update_weights=publish)
 
@@ -102,7 +106,31 @@ def test_lag_and_dataset_cursor_across_publications_and_resume(
         assert checkpoints[-1] == 174
     else:
         assert not checkpoints
-    assert any(overlaps) == (asynchronous and start < 175)
+    # Background producer overlap is exercised by test_stream; the driver
+    # itself must not launch a competing batch-generation call.
+    assert not any(overlaps)
     versions = json.loads(versions_path.read_text())
     assert versions["1"] == learner_updates_before(args, start)
     assert versions[str(state["version"])] == state["updates"]
+
+
+def test_shared_gpu_critic_finishes_before_actor_is_submitted(monkeypatch):
+    events = []
+    ray = ModuleType('ray')
+    def get(refs):
+        events.append(('wait', refs))
+    ray.get = get
+    monkeypatch.setitem(sys.modules, 'ray', ray)
+    monkeypatch.setattr(driver, '_event', lambda *args, **kwargs: None)
+    def critic_train(*args):
+        events.append(('submit', 'critic'))
+        return 'critic_done_and_offloaded'
+    def actor_train(*args, external_data):
+        assert events[-1] == ('wait', 'critic_done_and_offloaded')
+        assert external_data == 'critic_done_and_offloaded'
+        events.append(('submit', 'actor'))
+        return 'actor_done_and_offloaded'
+    driver._train_one(SimpleNamespace(num_critic_only_steps=0), 0, 'batch',
+                      SimpleNamespace(async_train=actor_train), SimpleNamespace(async_train=critic_train))
+    assert events == [('submit', 'critic'), ('wait', 'critic_done_and_offloaded'),
+                      ('submit', 'actor'), ('wait', 'actor_done_and_offloaded')]

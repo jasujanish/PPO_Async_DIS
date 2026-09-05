@@ -35,7 +35,8 @@ def write_policy_versions(versions: dict[int, int]) -> None:
     """Publish the mapping shared by the driver and rollout process atomically.
 
     Reset it on each container start: engine versions restart, learner updates
-    resume. No generation may start before this write or overlap a transfer.
+    resume. Async requests may span transfers; stream.py records a conservative
+    submission-age bound instead of treating the final engine label as exact.
     """
     path = Path(os.environ["PPO_ASYNC_POLICY_VERSIONS"])
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,8 +58,7 @@ def audit_policy_version(
         raise RuntimeError("SLIME did not provide a rollout_id to the policy-version hook")
     if sample.metadata is None:
         sample.metadata = {}
-    # Use the count when this batch WILL be consumed, not the wall-clock count
-    # while generation overlaps the previous learner step.
+    # Sync-only hook: generation and consumption use the same learner state.
     learner_updates = learner_updates_before(args, int(rollout_id))
     try:
         behavior_version = single_policy_version(sample.weight_versions)

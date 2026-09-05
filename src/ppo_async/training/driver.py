@@ -1,10 +1,4 @@
-"""Pinned SLIME training loops with non-overlapping four-GPU placement.
-
-SLIME v0.3.2's stock placement helper gives the critic the actor placement
-group. This driver deliberately partitions one four-GPU Ray placement group
-into actor, critic, and rollout slices before delegating all model, SGLang,
-rollout, and optimizer work to SLIME.
-"""
+"""One-GPU synchronous PPO and two-GPU completion-driven asynchronous PPO."""
 
 from __future__ import annotations
 
@@ -13,40 +7,29 @@ import json
 import os
 from pathlib import Path
 import shutil
+import time
 from typing import Any
 
 from ppo_async.training.hooks import learner_updates_before, write_policy_versions
 
 
-def role_slices(total_gpus: int = 4) -> dict[str, tuple[int, ...]]:
-    if total_gpus != 4:
-        raise ValueError("PPO_ASYNC requires exactly four GPUs")
-    return {"actor": (0,), "critic": (1,), "rollout": (2, 3)}
+def role_slices(total_gpus: int = 2) -> dict[str, tuple[int, ...]]:
+    if total_gpus not in (1, 2):
+        raise ValueError("use one GPU for sync or two for async")
+    return {"actor": (0,), "critic": (0,), "rollout": (total_gpus - 1,)}
 
 
 def _placement_groups(args: Any) -> dict[str, Any]:
     from slime.ray.placement_group import _create_placement_group
 
-    if args.actor_num_nodes != 1 or args.actor_num_gpus_per_node != 1:
-        raise ValueError("actor must use exactly GPU 0")
-    if args.critic_num_nodes != 1 or args.critic_num_gpus_per_node != 1:
-        raise ValueError("critic must use exactly GPU 1")
-    if args.rollout_num_gpus != 2 or args.rollout_num_gpus_per_engine != 1:
-        raise ValueError("rollout must use two independent one-GPU engines")
-    if args.colocate:
-        raise ValueError("colocation would violate physical GPU isolation")
-
-    placement_group, bundle_indices, gpu_ids = _create_placement_group(4)
-
-    def subset(indices: tuple[int, ...]):
-        return (
-            placement_group,
-            [bundle_indices[index] for index in indices],
-            [gpu_ids[index] for index in indices],
-        )
-
-    slices = role_slices()
-    return {role: subset(indices) for role, indices in slices.items()}
+    total = 1 if args.colocate else 2
+    if not args.offload_train:
+        raise ValueError("shared actor/critic GPU requires training offload")
+    placement_group, bundle_indices, gpu_ids = _create_placement_group(total)
+    return {
+        role: (placement_group, [bundle_indices[i] for i in indices], [gpu_ids[i] for i in indices])
+        for role, indices in role_slices(total).items()
+    }
 
 
 def _event(kind: str, **fields: Any) -> None:
@@ -132,16 +115,20 @@ def _initialize(args: Any):
     pgs = _placement_groups(args)
     _event(
         "gpu_placement",
-        actor=list(role_slices()["actor"]),
-        critic=list(role_slices()["critic"]),
-        rollout=list(role_slices()["rollout"]),
+        actor=list(role_slices(1 if args.colocate else 2)["actor"]),
+        critic=list(role_slices(1 if args.colocate else 2)["critic"]),
+        rollout=list(role_slices(1 if args.colocate else 2)["rollout"]),
     )
     init_tracking(args)
     rollout_manager, num_rollout_per_epoch = create_rollout_manager(args, pgs["rollout"])
     actor_model, critic_model = create_training_models(args, pgs, rollout_manager)
     if critic_model is None:
         raise RuntimeError("PPO must create a critic model")
+    if args.offload_rollout:
+        ray.get(rollout_manager.onload_weights.remote())
     actor_model.update_weights()
+    if args.offload_rollout:
+        ray.get(rollout_manager.onload_kv.remote())
     version = int(getattr(args, "update_weight_start_version", 0)) + 1
     updates = learner_updates_before(args, args.start_rollout_id)
     write_policy_versions({version: updates})
@@ -154,13 +141,15 @@ def _initialize(args: Any):
 def _train_one(args: Any, rollout_id: int, data, actor_model, critic_model) -> bool:
     import ray
 
+    started = time.monotonic()
     actor_trains = rollout_id >= args.num_critic_only_steps
     value_refs = critic_model.async_train(rollout_id, data)
+    # Both models occupy GPU 0. Critic must finish and offload before actor wakes.
+    ray.get(value_refs)
     if actor_trains:
         ray.get(actor_model.async_train(rollout_id, data, external_data=value_refs))
-    else:
-        ray.get(value_refs)
-    _event("learner_step", rollout_id=rollout_id, actor_trained=actor_trains)
+    _event("learner_step", rollout_id=rollout_id, actor_trained=actor_trains,
+           seconds=time.monotonic() - started)
     return actor_trains
 
 
@@ -184,6 +173,8 @@ def _save_if_due(
         )
     if not due:
         return False
+    if args.offload_rollout:
+        ray.get(rollout_manager.offload.remote())
     # Production checkpoints are recovery boundaries. Wait for any asynchronous
     # distributed save to finish before asking Modal to persist the Volume.
     force_sync = _production_mode(args) or rollout_id == args.num_rollout - 1
@@ -192,6 +183,8 @@ def _save_if_due(
     critic_model.save_model(rollout_id, force_sync=force_sync)
     if args.rollout_global_dataset:
         ray.get(rollout_manager.save.remote(rollout_id))
+    if args.offload_rollout:
+        ray.get(rollout_manager.onload.remote())
     _snapshot_tracking_state(args, rollout_id)
     processed_examples = _processed_examples(args, rollout_id)
     _event(
@@ -243,10 +236,13 @@ def train_synchronous(args: Any) -> None:
         for rollout_id in range(args.start_rollout_id, args.num_rollout):
             data = ray.get(rollout_manager.generate.remote(rollout_id))
             _event("rollout_batch_complete", rollout_id=rollout_id)
+            ray.get(rollout_manager.offload.remote())
             actor_trains = _train_one(
                 args, rollout_id, data, actor_model, critic_model
             )
+            ray.get(rollout_manager.onload_weights.remote())
             actor_model.update_weights()
+            ray.get(rollout_manager.onload_kv.remote())
             published_version += 1
             versions[published_version] = learner_updates_before(args, rollout_id + 1)
             write_policy_versions(versions)
@@ -278,80 +274,26 @@ def train_asynchronous(args: Any) -> None:
     from slime.observability.logging_utils import finish_tracking
 
     rollout_manager, per_epoch, actor_model, critic_model = _initialize(args)
-    publish_interval = int(os.environ["PPO_ASYNC_PUBLISH_INTERVAL"])
-    max_lag = int(os.environ["PPO_ASYNC_MAX_POLICY_LAG"])
     published_version = int(getattr(args, "update_weight_start_version", 0)) + 1
-    learner_updates = learner_updates_before(args, args.start_rollout_id)
-    published_updates = learner_updates
-    versions = {published_version: published_updates}
-    # A retry after the final committed checkpoint must not consume a third
-    # pass's first batch while merely rebuilding the completion report.
-    next_future = (
-        rollout_manager.generate.remote(args.start_rollout_id)
-        if args.start_rollout_id < args.num_rollout else None
-    )
-    prefetched_data = None
+    versions = {published_version: learner_updates_before(args, args.start_rollout_id)}
     try:
         for rollout_id in range(args.start_rollout_id, args.num_rollout):
-            if prefetched_data is not None:
-                current_data = prefetched_data
-                prefetched_data = None
-            else:
-                if next_future is None:
-                    next_future = rollout_manager.generate.remote(rollout_id)
-                current_data = ray.get(next_future)
-                next_future = None
+            # This dequeues completed proofs. The persistent producer continues
+            # generating through learner updates, saves and evaluation.
+            data = ray.get(rollout_manager.generate.remote(rollout_id))
             _event("rollout_batch_complete", rollout_id=rollout_id)
-
-            action_due = _crosses_interval(
-                args, rollout_id, getattr(args, "checkpoint_every_examples", None)
-            ) or _evaluation_due(args, rollout_id)
-            # Do not prefetch with weights that will be too old at consumption.
-            # In that case, finish this update and publish before generating.
-            next_lag = learner_updates_before(args, rollout_id + 1) - published_updates
-            if rollout_id + 1 < args.num_rollout and not action_due and next_lag <= max_lag:
-                next_future = rollout_manager.generate.remote(rollout_id + 1)
-                _event("rollout_batch_started", rollout_id=rollout_id + 1)
-
-            actor_trains = _train_one(
-                args, rollout_id, current_data, actor_model, critic_model
-            )
-            learner_updates += int(actor_trains)
-            final_step = rollout_id == args.num_rollout - 1
-            if final_step or action_due or next_lag > max_lag or (rollout_id + 1) % publish_interval == 0:
-                # SLIME must never mutate SGLang weights midway through a
-                # trajectory. Finish the already-overlapped batch first.
-                if next_future is not None:
-                    prefetched_data = ray.get(next_future)
-                    next_future = None
-                actor_model.update_weights()
-                published_version += 1
-                published_updates = learner_updates
-                versions[published_version] = published_updates
-                write_policy_versions(versions)
-                _event(
-                    "weight_publish",
-                    published_version=published_version,
-                    learner_updates=learner_updates,
-                )
+            actor_trains = _train_one(args, rollout_id, data, actor_model, critic_model)
+            # SLIME pauses/retracts active requests for transfer, then resumes
+            # their prefixes. There is no full-trajectory drain or next-batch wait.
+            actor_model.update_weights()
+            published_version += 1
+            versions[published_version] = learner_updates_before(args, rollout_id + 1)
+            write_policy_versions(versions)
+            _event("weight_publish", published_version=published_version,
+                   learner_updates=versions[published_version])
             _evaluate_if_due(args, rollout_id, rollout_manager)
-            _save_if_due(
-                args,
-                rollout_id,
-                per_epoch,
-                actor_model,
-                critic_model,
-                rollout_manager,
-                actor_trains,
-            )
-
-            if (
-                rollout_id + 1 < args.num_rollout
-                and next_future is None
-                and prefetched_data is None
-            ):
-                next_future = rollout_manager.generate.remote(rollout_id + 1)
-                _event("rollout_batch_started", rollout_id=rollout_id + 1)
+            _save_if_due(args, rollout_id, per_epoch, actor_model, critic_model,
+                         rollout_manager, actor_trains)
     finally:
         ray.get(rollout_manager.dispose.remote())
         finish_tracking(args)

@@ -1,4 +1,4 @@
-"""Four-H100 Modal entrypoints for PPO_ASYNC smoke and production runs."""
+"""Serialized Modal runs: one H100 for sync, two for async."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ import sys
 from typing import Any
 
 import modal
+from contextlib import contextmanager
 
 
 APP_NAME = "ppo-async-qwen35-4b"
@@ -21,7 +22,8 @@ REMOTE_ROOT = Path("/workspace/PPO_ASYNC")
 CONFIG_ROOT = PROJECT_ROOT if (PROJECT_ROOT / "config/experiment.json").is_file() else REMOTE_ROOT
 sys.path.insert(0, str(CONFIG_ROOT / "src"))
 
-from ppo_async.config import arm_config, load_experiment  # noqa: E402
+from ppo_async.config import arm_config, load_experiment, gpu_count, gpu_request  # noqa: E402
+from ppo_async.training.driver import role_slices  # noqa: E402
 
 
 EXPERIMENT = load_experiment(CONFIG_ROOT / "config/experiment.json")
@@ -29,7 +31,6 @@ MODEL_ID = EXPERIMENT["model"]["id"]
 MODEL_REVISION = EXPERIMENT["model"]["revision"]
 SLIME_REVISION = EXPERIMENT["runtime"]["slime_revision"]
 BASE_IMAGE = EXPERIMENT["runtime"]["base_container"]
-GPU_REQUEST = EXPERIMENT["hardware"]["request"]
 
 app = modal.App(APP_NAME)
 
@@ -83,12 +84,12 @@ def _safe_run_name(run_name: str) -> str:
     return run_name
 
 
-def _hardware_inventory() -> dict[str, Any]:
+def _hardware_inventory(arm: str) -> dict[str, Any]:
     import torch
 
-    if not torch.cuda.is_available() or torch.cuda.device_count() != 4:
+    if not torch.cuda.is_available() or torch.cuda.device_count() != gpu_count(arm):
         raise RuntimeError(
-            f"expected exactly four visible CUDA GPUs, found {torch.cuda.device_count()}"
+            f"expected {gpu_count(arm)} visible CUDA GPUs, found {torch.cuda.device_count()}"
         )
     completed = subprocess.run(
         [
@@ -101,14 +102,29 @@ def _hardware_inventory() -> dict[str, Any]:
         text=True,
     )
     rows = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-    if len(rows) != 4 or any("H100" not in row for row in rows):
-        raise RuntimeError(f"strict four-H100 hardware attestation failed: {rows}")
+    if len(rows) != gpu_count(arm) or any("H100" not in row for row in rows):
+        raise RuntimeError(f"strict H100 hardware attestation failed: {rows}")
     return {
-        "requested": GPU_REQUEST,
+        "requested": gpu_request(arm),
         "cuda_device_count": torch.cuda.device_count(),
         "gpus": rows,
-        "roles": EXPERIMENT["hardware"]["placement"],
+        "roles": role_slices(gpu_count(arm)),
     }
+
+
+@contextmanager
+def _gpu_utilization(run_root: Path):
+    with (run_root / "gpu-utilization.csv").open("a") as output:
+        monitor = subprocess.Popen(
+            ["nvidia-smi", "--query-gpu=timestamp,index,utilization.gpu,memory.used,power.draw",
+             "--format=csv,noheader,nounits", "--loop=1"],
+            stdout=output, stderr=subprocess.DEVNULL,
+        )
+        try:
+            yield
+        finally:
+            monitor.terminate()
+            monitor.wait(timeout=10)
 
 
 def _download_model() -> Path:
@@ -290,26 +306,20 @@ def _persist_and_compact_boundary(run_root: Path, rollout_id: int) -> None:
     artifact_volume.commit()
 
 
-@app.function(
-    image=image,
-    gpu=GPU_REQUEST,
-    cpu=32,
-    memory=131_072,
-    timeout=12 * 60 * 60,
-    startup_timeout=2 * 60 * 60,
-    retries=0,
-    volumes={
-        "/vol/model-cache": model_cache,
-        "/vol/artifacts": artifact_volume,
-    },
-)
-def train_smoke(
+@app.function(image=image, cpu=1, memory=512, timeout=12 * 60 * 60, max_containers=1)
+def train_smoke(arm="sync_ppo", training_examples=16, num_rollouts=1, run_name="smoke-sync-ppo-16-v3"):
+    arm_config(EXPERIMENT, arm)
+    worker = train_sync if arm == "sync_ppo" else train_async
+    return worker.remote("smoke", arm, run_name, training_examples, num_rollouts)
+
+
+def _run_smoke(
     arm: str = "sync_ppo",
     training_examples: int = 16,
     num_rollouts: int = 1,
     run_name: str = "smoke-sync-ppo-16-v1",
 ) -> dict[str, Any]:
-    """Run a bounded, paid four-H100 integration smoke test."""
+    """Run a bounded GPU integration smoke test."""
     sys.path.insert(0, str(REMOTE_ROOT / "src"))
     sys.path.insert(0, "/root/slime")
     from ppo_async.data import materialize
@@ -332,7 +342,7 @@ def train_smoke(
         raise RuntimeError(f"run is already complete: {run_name}")
     run_root.mkdir(parents=True, exist_ok=True)
 
-    hardware = _hardware_inventory()
+    hardware = _hardware_inventory(arm)
     preparation = materialize(
         REMOTE_ROOT / "data",
         run_root / "prompts",
@@ -351,7 +361,6 @@ def train_smoke(
         "NCCL_NVLS_ENABLE": "1",
         "PYTHONUNBUFFERED": "1",
         "PPO_ASYNC_ARM": arm,
-        "PPO_ASYNC_PUBLISH_INTERVAL": str(selected_arm["weight_publish_interval"]),
         "PPO_ASYNC_MAX_POLICY_LAG": str(selected_arm["max_policy_lag"]),
         "PPO_ASYNC_DIS_EPSILON_LOW": str(EXPERIMENT["ppo"]["dis_epsilon_low"]),
         "PPO_ASYNC_DIS_EPSILON_HIGH": str(EXPERIMENT["ppo"]["dis_epsilon_high"]),
@@ -395,18 +404,19 @@ def train_smoke(
     subprocess.run(
         [
             "ray", "start", "--head", "--node-ip-address", "127.0.0.1",
-            "--num-gpus", "4", "--num-cpus", "32", "--disable-usage-stats",
+            "--num-gpus", str(gpu_count(arm)), "--num-cpus", "32", "--disable-usage-stats",
             "--dashboard-host", "127.0.0.1", "--dashboard-port", "8265",
         ],
         env=environment,
         check=True,
     )
     started_at = datetime.now(timezone.utc).isoformat()
-    try:
-        subprocess.run(command, cwd="/root/slime", env=environment, check=True)
-    finally:
-        subprocess.run(["ray", "stop", "--force"], env=environment, check=False)
-        artifact_volume.commit()
+    with _gpu_utilization(run_root):
+        try:
+            subprocess.run(command, cwd="/root/slime", env=environment, check=True)
+        finally:
+            subprocess.run(["ray", "stop", "--force"], env=environment, check=False)
+            artifact_volume.commit()
 
     artifacts = validate_smoke_artifacts(run_root, num_rollouts - 1)
 
@@ -494,23 +504,15 @@ def preflight_final_commands() -> dict[str, Any]:
     return {"status": "valid", "arms": validated}
 
 
-@app.function(
-    image=image,
-    gpu=GPU_REQUEST,
-    cpu=32,
-    memory=131_072,
-    timeout=int(EXPERIMENT["production"]["timeout_seconds"]),
-    startup_timeout=2 * 60 * 60,
-    retries=2,
-    # Three detached calls share this function. Serialize them so the project
-    # never consumes more than the authorized four H100s at once.
-    max_containers=1,
-    volumes={
-        "/vol/model-cache": model_cache,
-        "/vol/artifacts": artifact_volume,
-    },
-)
-def train_final(
+@app.function(image=image, cpu=1, memory=512,
+              timeout=int(EXPERIMENT["production"]["timeout_seconds"]), max_containers=1, retries=2)
+def train_final(arm: str, run_name: str):
+    arm_config(EXPERIMENT, arm)
+    worker = train_sync if arm == "sync_ppo" else train_async
+    return worker.remote("final", arm, run_name)
+
+
+def _run_final(
     arm: str,
     run_name: str,
 ) -> dict[str, Any]:
@@ -534,7 +536,7 @@ def train_final(
         return json.loads(completion_path.read_text(encoding="utf-8"))
     run_root.mkdir(parents=True, exist_ok=True)
 
-    hardware = _hardware_inventory()
+    hardware = _hardware_inventory(arm)
     hf_checkpoint = _download_model()
     converted = Path("/vol/model-cache/torch-dist") / MODEL_REVISION
     if not (converted / "latest_checkpointed_iteration.txt").is_file():
@@ -590,7 +592,6 @@ def train_final(
         "NCCL_NVLS_ENABLE": "1",
         "PYTHONUNBUFFERED": "1",
         "PPO_ASYNC_ARM": arm,
-        "PPO_ASYNC_PUBLISH_INTERVAL": str(selected_arm["weight_publish_interval"]),
         "PPO_ASYNC_MAX_POLICY_LAG": str(selected_arm["max_policy_lag"]),
         "PPO_ASYNC_DIS_EPSILON_LOW": str(EXPERIMENT["ppo"]["dis_epsilon_low"]),
         "PPO_ASYNC_DIS_EPSILON_HIGH": str(EXPERIMENT["ppo"]["dis_epsilon_high"]),
@@ -606,7 +607,7 @@ def train_final(
     subprocess.run(
         [
             "ray", "start", "--head", "--node-ip-address", "127.0.0.1",
-            "--num-gpus", "4", "--num-cpus", "32", "--disable-usage-stats",
+            "--num-gpus", str(gpu_count(arm)), "--num-cpus", "32", "--disable-usage-stats",
             "--dashboard-host", "127.0.0.1", "--dashboard-port", "8265",
         ],
         env=environment,
@@ -614,34 +615,35 @@ def train_final(
     )
     started_at = datetime.now(timezone.utc).isoformat()
     process: subprocess.Popen[str] | None = None
-    try:
-        process = subprocess.Popen(
-            command,
-            cwd="/root/slime",
-            env=environment,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-        )
-        assert process.stdout is not None
-        for line in process.stdout:
-            print(line, end="", flush=True)
-            marker = re.search(r"PPO_ASYNC_COMMIT (\{.*\})", line)
-            if marker:
-                payload = json.loads(marker.group(1))
-                _persist_and_compact_boundary(run_root, int(payload["rollout_id"]))
-        return_code = process.wait()
-        if return_code:
-            raise subprocess.CalledProcessError(return_code, command)
-    finally:
-        if process is not None and process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=30)
-            except subprocess.TimeoutExpired:
-                process.kill()
-        subprocess.run(["ray", "stop", "--force"], env=environment, check=False)
+    with _gpu_utilization(run_root):
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd="/root/slime",
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+            assert process.stdout is not None
+            for line in process.stdout:
+                print(line, end="", flush=True)
+                marker = re.search(r"PPO_ASYNC_COMMIT (\{.*\})", line)
+                if marker:
+                    payload = json.loads(marker.group(1))
+                    _persist_and_compact_boundary(run_root, int(payload["rollout_id"]))
+            return_code = process.wait()
+            if return_code:
+                raise subprocess.CalledProcessError(return_code, command)
+        finally:
+            if process is not None and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+            subprocess.run(["ray", "stop", "--force"], env=environment, check=False)
 
     artifacts = validate_production_artifacts(
         run_root,
@@ -670,6 +672,31 @@ def train_final(
     )
     artifact_volume.commit()
     return report
+
+
+# Sharing the implementation keeps GPU allocation explicit without duplicating
+# training, checkpointing or artifact code. Production calls remain serialized
+# by train_final, including worker retries.
+_worker_options = dict(
+    image=image, cpu=32, memory=196_608,
+    timeout=int(EXPERIMENT["production"]["timeout_seconds"]),
+    startup_timeout=2 * 60 * 60, max_containers=1,
+    volumes={"/vol/model-cache": model_cache, "/vol/artifacts": artifact_volume},
+)
+
+
+@app.function(gpu="H100!:1", **_worker_options)
+def train_sync(mode, arm, run_name, training_examples=16, num_rollouts=1):
+    if arm != "sync_ppo":
+        raise ValueError("one-GPU worker requires sync_ppo")
+    return _run_final(arm, run_name) if mode == "final" else _run_smoke(arm, training_examples, num_rollouts, run_name)
+
+
+@app.function(gpu="H100!:2", **_worker_options)
+def train_async(mode, arm, run_name, training_examples=16, num_rollouts=1):
+    if arm not in {"async_ppo", "async_ppo_dis"}:
+        raise ValueError("two-GPU worker requires an async arm")
+    return _run_final(arm, run_name) if mode == "final" else _run_smoke(arm, training_examples, num_rollouts, run_name)
 
 
 @app.local_entrypoint()
@@ -702,7 +729,7 @@ def main(
             json.dumps(
                 {
                     "status": "launched",
-                    "gpu_concurrency": "one four-H100 call at a time",
+                    "gpu_concurrency": "one production run at a time; sync=1 H100, async=2 H100",
                     "calls": launches,
                 },
                 indent=2,

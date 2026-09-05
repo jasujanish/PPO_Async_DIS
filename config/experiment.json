@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "ppo-async-qwen35-4b-balanced700-2pass-v2",
+  "experiment_id": "ppo-async-qwen35-4b-balanced700-2pass-v3",
   "model": {
     "id": "Qwen/Qwen3.5-4B",
     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
@@ -15,14 +15,9 @@
   },
   "hardware": {
     "provider": "Modal",
-    "request": "H100!:4",
-    "physical_gpu_count": 4,
-    "placement": {
-      "actor": [0],
-      "critic": [1],
-      "rollout": [2, 3]
-    },
-    "rollout_engines": 2,
+    "sync_gpus": 1,
+    "async_gpus": 2,
+    "rollout_engines": 1,
     "rollout_gpus_per_engine": 1
   },
   "data": {
@@ -41,29 +36,26 @@
   "arms": {
     "sync_ppo": {
       "driver": "synchronous",
-      "fully_async_rollout": false,
       "dis": false,
       "weight_publish_interval": 1,
       "max_policy_lag": 0
     },
     "async_ppo": {
       "driver": "asynchronous",
-      "fully_async_rollout": true,
       "dis": false,
-      "weight_publish_interval": 2,
-      "max_policy_lag": 1
+      "weight_publish_interval": 1,
+      "max_policy_lag": 4
     },
     "async_ppo_dis": {
       "driver": "asynchronous",
-      "fully_async_rollout": true,
       "dis": true,
-      "weight_publish_interval": 2,
-      "max_policy_lag": 1
+      "weight_publish_interval": 1,
+      "max_policy_lag": 4
     }
   },
   "ppo": {
-    "actor_learning_rate": 3e-7,
-    "critic_learning_rate": 3e-6,
+    "actor_learning_rate": 3e-07,
+    "critic_learning_rate": 3e-06,
     "gamma": 1.0,
     "lambda": 0.95,
     "clip_epsilon": 0.2,
@@ -81,7 +73,7 @@
     "samples_per_prompt": 1,
     "global_batch_size": 8,
     "max_train_tokens_per_gpu": 4096,
-    "log_probs_chunk_size": 1024,
+    "log_probs_chunk_size": 256,
     "max_response_tokens": 16384,
     "max_prompt_tokens": 8192,
     "temperature": 0.8,

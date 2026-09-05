@@ -115,7 +115,7 @@ def build_train_command(
         "--train-backend", "megatron",
         "--actor-num-nodes", "1",
         "--actor-num-gpus-per-node", "1",
-        "--rollout-num-gpus", "2",
+        "--rollout-num-gpus", "1",
         "--rollout-num-gpus-per-engine", "1",
         *MODEL_ARGS,
         "--hf-checkpoint", str(hf_checkpoint),
@@ -133,7 +133,6 @@ def build_train_command(
         "--apply-chat-template-kwargs", '{"enable_thinking": true}',
         "--rollout-shuffle",
         "--custom-rm-path", "ppo_async.training.reward.reward",
-        "--rollout-sample-hook-path", "ppo_async.training.hooks.audit_policy_version",
         "--num-rollout", str(num_rollouts),
         "--rollout-batch-size", str(rollout["batch_size"]),
         "--n-samples-per-prompt", str(rollout["samples_per_prompt"]),
@@ -174,6 +173,8 @@ def build_train_command(
         "--context-parallel-size", "1",
         "--expert-model-parallel-size", "1",
         "--expert-tensor-parallel-size", "1",
+        "--custom-megatron-init-path", "ppo_async.training.memory.initialize",
+        "--recompute-loss-function",
         "--recompute-granularity", "full",
         "--recompute-method", "uniform",
         "--recompute-num-layers", "1",
@@ -236,8 +237,13 @@ def build_train_command(
                 "--ci-disable-kl-checker",
             ]
         )
-    # All arms use batch-bounded generation. The driver owns async lookahead
-    # so weight publication cannot race a continuously replenished worker.
+    command.extend(["--offload-train", "--num-gpus-per-node", "1" if arm == "sync_ppo" else "2"])
+    if arm == "sync_ppo":
+        command.extend(["--colocate", "--rollout-sample-hook-path",
+                        "ppo_async.training.hooks.audit_policy_version"])
+    else:
+        command.extend(["--data-source-path", "ppo_async.training.stream.StreamDataSource",
+                        "--rollout-function-path", "ppo_async.training.stream.generate_rollout"])
     if selected_arm["dis"]:
         # SLIME's TIS path recomputes the learner-policy log-probabilities and
         # compares them with rollout_log_probs.  Its validator deliberately
@@ -254,9 +260,6 @@ def build_train_command(
         command.extend(
             [
                 "--use-rollout-logprobs",
-                "--get-mismatch-metrics",
-                "--custom-tis-function-path",
-                "ppo_async.training.dis.observe_importance",
             ]
         )
     return command

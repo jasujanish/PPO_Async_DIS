@@ -67,6 +67,7 @@ def _sample_scalar(args: Any, sample: Any) -> dict[str, Any]:
         "source": str(metadata.get("source_name", "unknown")),
         "verification_status": str(verification.get("status", "unknown")),
         "policy_lag_updates": int(metadata.get("policy_lag_updates", 0)),
+        "policy_lag_is_upper_bound": bool(metadata.get("policy_lag_is_upper_bound", False)),
     }
 
 
@@ -89,6 +90,7 @@ def _summarize_window(items: list[dict[str, Any]], start: int, end: int) -> dict
         "truncated_rate": _mean(items, "truncated"),
         "removed_rate": _mean(items, "removed"),
         "policy_lag_updates_mean": _mean(items, "policy_lag_updates"),
+        "policy_lag_upper_bound_fraction": _mean(items, "policy_lag_is_upper_bound"),
         "source_counts": {source: sum(item["source"] == source for item in items) for source in sources},
         "verification_counts": {
             status: sum(item["verification_status"] == status for item in items)

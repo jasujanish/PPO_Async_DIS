@@ -4,23 +4,24 @@ PPO_ASYNC compares three reinforcement-learning systems for Lean 4 theorem
 proving with `Qwen/Qwen3.5-4B`:
 
 1. synchronous, on-policy PPO;
-2. asynchronous PPO with one-batch SGLang lookahead;
+2. asynchronous PPO with continuously replenished SGLang requests;
 3. the same asynchronous PPO system with Direct Double-Sided Importance
    Sampling (DIS).
 
-The implementation uses pinned SLIME v0.3.2 and SGLang. It is a true
-four-GPU system on one Modal node:
+The implementation uses pinned SLIME v0.3.2 and SGLang on one Modal node:
 
-| Physical GPU | Role |
-| --- | --- |
-| H100 0 | actor/learner |
-| H100 1 | critic |
-| H100 2 | SGLang rollout engine 0 |
-| H100 3 | SGLang rollout engine 1 |
+| Track | H100s | Placement |
+| --- | --- | --- |
+| Synchronous | 1 | Generation, critic, then actor take turns on GPU 0 |
+| Asynchronous / DIS | 2 | Critic and actor take turns on GPU 0; generation runs on GPU 1 |
 
-The custom SLIME driver assigns non-overlapping Ray placement-group slices to
-these roles. `--colocate` is forbidden. Modal requests `H100!:4`, so H200
-substitution cannot silently change the experiment.
+Inactive training models are offloaded to CPU. Sync also offloads SGLang before
+training or saving. Critic completion is awaited before the actor wakes, so the
+shared training GPU never runs both models together. Modal requests strict H100s
+and 192 GiB of host memory for the offloaded models and optimizer states.
+This allocation reduces reserved GPU time; measured throughput still depends on
+proof lengths, CPU transfer overhead and verification time. Full 16k memory
+headroom must be checked on the target runtime, not inferred from CPU tests.
 
 ## Data contract
 
@@ -94,7 +95,7 @@ zero reward.
 Training rollouts and in-run evaluation permit up to 16,384 response tokens.
 The 4,096-token dynamic packing target is not a response cap: SLIME places
 longer individual samples alone in a microbatch. Peak memory for 16k responses
-still requires validation on the four-H100 integration run.
+still requires validation on the GPU integration run.
 
 Training and standalone evaluation share `lean.py` and `Verifier.lean`. The
 candidate is parsed as exactly one Lean term. After elaboration, a trusted
@@ -107,22 +108,33 @@ axiom-audit marker is rejected.
 
 The actor weights remain fixed while a complete batch is generated and Lean
 verified. Actor and critic update only after the batch finishes; the new actor
-weights are then published atomically to both SGLang engines.
+weights are then published to the SGLang engine.
 
 ### Asynchronous PPO
 
-The asynchronous driver overlaps learner work with exactly one next rollout
-batch. At checkpoint/evaluation thresholds it stops prefetching and drains the
-current batch before publishing weights. This keeps the global dataset cursor
-identical to the number of trained examples and makes retries exact. Weight
-versions are immutable within each trajectory. The configured publish cadence
-permits at most one learner-update of policy lag; older trajectories are
-loss-masked and recorded. Lag is calculated from a mapping of actual SGLang
-weight versions to completed learner updates, evaluated for the batch's
-consumption point. Before prefetching, the driver checks the next batch's
-projected lag and delays generation until after publication if necessary. The
-version mapping resets after a container restart while the learner count
-resumes from the checkpoint. Smoke and production both use bounded generation.
+`training/stream.py` keeps eight generation/verification tasks alive across
+learner updates. Each completed proof enters a queue capped at eight; freed
+workers immediately reserve another prompt. The learner takes the first eight
+completions, so a long proof cannot hold its original cohort up. Backpressure
+bounds unconsumed work to eight queued proofs plus eight worker-held proofs.
+There is no next-batch prefetch barrier in the driver.
+
+Actor weights are published after every update using SLIME's native SGLang
+pause/retract/transfer/resume path. Requests can span weight versions; actual
+rollout token log probabilities remain the behavior-policy denominator. SGLang
+returns a final version label rather than a version for every token, so request
+submission age is logged explicitly as a **conservative upper bound** and checked
+at learner dequeue. Proofs older than four updates are regenerated using the
+same logical prompt ID. After three retries, the run fails instead of silently
+skipping data or consuming unlimited compute.
+
+Checkpoints save the source cursor together with original prompts for every
+outstanding attempt, including completed but unconsumed proofs. On retry those
+attempts are regenerated; already committed training examples are not replayed.
+The producer never reserves more than the 1,400 logical attempts. Completion
+order is intentionally nondeterministic, while the two-pass prompt multiset is
+preserved. Generation continues during checkpoints and evaluation, subject to
+queue backpressure. Smoke uses exactly this production scheduler.
 
 ### Asynchronous PPO + DIS
 
@@ -147,7 +159,7 @@ uv run pytest -q
 git diff --check
 ```
 
-The test suite checks all three command paths, physical GPU isolation, exact
+The test suite checks all three command paths, shared-GPU handoffs, completion ordering, bounded queues and recovery, exact
 data filtering, proof non-leakage, action-only GAE, behavior-policy accounting,
 asymmetric open-interval DIS masking, and the training budget. Real verifier
 regressions can run against installed Lean binaries in all three versions:
@@ -157,7 +169,7 @@ PPO_ASYNC_TEST_LEAN_BINARIES=/path/to/lean48:/path/to/lean427:/path/to/lean428 \
   uv run pytest -q tests/test_lean_verifier.py
 ```
 
-## Four-H100 smoke run
+## GPU smoke run
 
 This integration smoke processes 16 training examples in two batches of 8:
 
@@ -166,12 +178,12 @@ uv run modal run modal_train.py \
   --arm sync-ppo \
   --training-examples 16 \
   --num-rollouts 2 \
-  --run-name smoke-sync-ppo-16-16k-v2
+  --run-name smoke-sync-ppo-16-16k-v3
 ```
 
-The remote function attests four visible H100s before downloading or training,
+The remote function attests one H100 for sync or two for async before downloading or training,
 materializes the exact prompt set, converts the pinned checkpoint, starts Ray,
-launches one actor, one critic, and two SGLang engines, performs the PPO updates,
+launches one actor, one critic, and one SGLang engine, performs the PPO updates,
 and writes commands, hardware inventory, trajectories, metrics, checkpoints,
 Hugging Face exports, and a completion report to `ppo-async-artifacts`.
 
@@ -190,7 +202,7 @@ evaluation, and export actions run after the first completed batch crossing
 each 100-example threshold: 104, 200, 304, 400, and so on through 1,400.
 
 Every action boundary contains a resumable actor, critic, optimizer, and global
-dataset cursor checkpoint; complete Gaokao-Formal and FATE-M pass@1 records;
+dataset cursor (and async outstanding prompts) checkpoint; complete Gaokao-Formal and FATE-M pass@1 records;
 and a Hugging Face actor export. Actor/critic training state retains the newest
 complete boundary while all scheduled Hugging Face exports and compact metric
 records remain available. Modal retries resume only from a complete transaction
@@ -198,15 +210,15 @@ marker, so a failed partial tail is not counted twice.
 
 Deploy the production function once, then use the final-run launcher. `--arm
 all` submits three independent persistent function calls and prints all call
-IDs. A shared container limit runs one four-H100 arm at a time, keeping total
-use at four GPUs while the remaining calls stay queued. The launcher first
+IDs. A CPU dispatcher serializes production runs, selecting the one- or two-GPU
+worker for each arm while the remaining calls stay queued. The launcher first
 runs a CPU-only parse preflight for all pinned SLIME/Megatron commands:
 
 ```bash
 uv run modal deploy modal_train.py
 uv run python launch_final.py \
   --arm all \
-  --run-prefix balanced700-2pass-qwen35-4b-h100-b8-v2
+  --run-prefix balanced700-2pass-qwen35-4b-h100-b8-v3
 ```
 
 The arm name is appended to each artifact directory. A single arm can also be
@@ -236,3 +248,16 @@ It compiles every selected statement before allocating the generation GPU,
 generates exactly one proof per theorem with SGLang, and verifies candidates in
 the benchmark's pinned Lean environment. Evaluation output never enters the
 training buffer.
+
+GPU integration runs record `gpu-utilization.csv` every second alongside
+`events.jsonl`. Compare GPU-seconds per trained example, learner time and stream
+wait time after startup; smaller GPU allocations do not by themselves prove
+higher throughput. The DIS arm still uses masked PPO through SLIME's TIS path;
+this is an asynchronous PPO comparison, not a full reproduction of SAO's critic
+training and direct objective.
+
+The actor vocabulary softmax is checkpointed per 256-token chunk via SLIME’s
+worker-init hook, with loss recomputation enabled. This avoids retaining a
+full-sequence softmax alongside the logits at 16k response length. The OOM
+regression preserves log-probabilities and gradients; GPU smoke jobs provide
+the remaining peak-memory validation.

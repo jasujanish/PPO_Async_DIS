@@ -9,7 +9,14 @@ from typing import Any
 
 ARMS = ("sync_ppo", "async_ppo", "async_ppo_dis")
 MODEL_ID = "Qwen/Qwen3.5-4B"
-GPU_REQUEST = "H100!:4"
+def gpu_count(arm: str) -> int:
+    if arm not in ARMS:
+        raise ValueError(f"unknown arm {arm!r}")
+    return 1 if arm == "sync_ppo" else 2
+
+
+def gpu_request(arm: str) -> str:
+    return f"H100!:{gpu_count(arm)}"
 
 
 def project_root() -> Path:
@@ -33,29 +40,17 @@ def validate_experiment(config: dict[str, Any]) -> None:
     if config.get("model", {}).get("id") != MODEL_ID:
         raise ValueError(f"model must be {MODEL_ID}")
 
-    hardware = config.get("hardware", {})
-    if hardware.get("request") != GPU_REQUEST:
-        raise ValueError(f"GPU request must be {GPU_REQUEST}")
-    if hardware.get("physical_gpu_count") != 4:
-        raise ValueError("experiment must allocate exactly four physical GPUs")
-    placement = hardware.get("placement", {})
-    expected = {"actor": [0], "critic": [1], "rollout": [2, 3]}
-    if placement != expected:
-        raise ValueError(f"GPU placement must be {expected}")
-    assigned = [gpu for role in expected for gpu in placement[role]]
-    if sorted(assigned) != list(range(4)) or len(set(assigned)) != 4:
-        raise ValueError("actor, critic, and rollout GPU assignments must not overlap")
-    if hardware.get("rollout_engines") != 2:
-        raise ValueError("the two rollout GPUs must host two independent engines")
-    if hardware.get("rollout_gpus_per_engine") != 1:
-        raise ValueError("each SGLang rollout engine must use exactly one GPU")
+    if config.get("hardware") != {
+        "provider": "Modal", "sync_gpus": 1, "async_gpus": 2,
+        "rollout_engines": 1, "rollout_gpus_per_engine": 1,
+    }:
+        raise ValueError("hardware must use one GPU for sync and two for async")
 
     arms = config.get("arms", {})
     if tuple(arms) != ARMS:
         raise ValueError(f"arms must be ordered exactly as {ARMS}")
     if arms["sync_ppo"] != {
         "driver": "synchronous",
-        "fully_async_rollout": False,
         "dis": False,
         "weight_publish_interval": 1,
         "max_policy_lag": 0,
@@ -63,10 +58,10 @@ def validate_experiment(config: dict[str, Any]) -> None:
         raise ValueError("sync_ppo contract changed")
     for name in ("async_ppo", "async_ppo_dis"):
         arm = arms[name]
-        if arm["driver"] != "asynchronous" or not arm["fully_async_rollout"]:
-            raise ValueError(f"{name} must use the asynchronous driver and fully-async rollout")
-        if arm["max_policy_lag"] >= arm["weight_publish_interval"]:
-            raise ValueError(f"{name} lag cap must be below its publish interval")
+        if arm["driver"] != "asynchronous":
+            raise ValueError(f"{name} must use the asynchronous driver")
+        if arm["weight_publish_interval"] != 1 or arm["max_policy_lag"] != 4:
+            raise ValueError(f"{name} must publish every update with a four-update age cap")
     if arms["async_ppo"]["dis"] or not arms["async_ppo_dis"]["dis"]:
         raise ValueError("DIS must be enabled only in async_ppo_dis")
 
@@ -91,8 +86,8 @@ def validate_experiment(config: dict[str, Any]) -> None:
         raise ValueError("training responses must allow 16384 tokens")
     if rollout.get("max_train_tokens_per_gpu") != 4096:
         raise ValueError("Qwen3.5-4B must use the 4096-token packing target (longer samples are packed alone)")
-    if rollout.get("log_probs_chunk_size") != 1024:
-        raise ValueError("Qwen3.5-4B must compute log probabilities in 1024-token chunks")
+    if rollout.get("log_probs_chunk_size") != 256:
+        raise ValueError("Qwen3.5-4B must compute log probabilities in 256-token chunks")
 
     production = config.get("production", {})
     expected_production = {

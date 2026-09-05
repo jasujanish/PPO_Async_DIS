@@ -27,18 +27,15 @@ ROOT = Path(__file__).resolve().parents[1]
 STATEMENT = "theorem example : True := by sorry"
 
 
-def test_experiment_freezes_real_four_gpu_topology() -> None:
+def test_experiment_uses_shared_training_gpu() -> None:
     config = load_experiment(ROOT / "config/experiment.json")
-    assert config["hardware"]["request"] == "H100!:4"
-    assert role_slices() == {"actor": (0,), "critic": (1,), "rollout": (2, 3)}
-    assert config["hardware"]["placement"] == {
-        "actor": [0],
-        "critic": [1],
-        "rollout": [2, 3],
-    }
+    assert config["hardware"]["sync_gpus"] == 1
+    assert config["hardware"]["async_gpus"] == 2
+    assert role_slices(1) == {"actor": (0,), "critic": (0,), "rollout": (0,)}
+    assert role_slices(2) == {"actor": (0,), "critic": (0,), "rollout": (1,)}
     broken = json.loads(json.dumps(config))
-    broken["hardware"]["placement"]["critic"] = [0]
-    with pytest.raises(ValueError, match="placement"):
+    broken["hardware"]["async_gpus"] = 4
+    with pytest.raises(ValueError, match="hardware"):
         validate_experiment(broken)
 
 
@@ -217,18 +214,24 @@ def test_launcher_selects_three_distinct_loops() -> None:
         assert built[:4] == ["python3", "-m", "ppo_async.training.driver", "--train-backend"]
         assert not any(argument.endswith("driver.py") for argument in built)
         assert built[built.index("--actor-num-gpus-per-node") + 1] == "1"
-        assert built[built.index("--rollout-num-gpus") + 1] == "2"
-        assert "--colocate" not in built
+        assert built[built.index("--rollout-num-gpus") + 1] == "1"
+        assert "--offload-train" in built
         assert "Qwen3.5-4B" not in " ".join(built)  # model is supplied by checkpoint path
         assert built[built.index("--rollout-max-response-len") + 1] == "16384"
         assert built[built.index("--max-tokens-per-gpu") + 1] == "4096"
-        assert built[built.index("--log-probs-chunk-size") + 1] == "1024"
+        assert built[built.index("--log-probs-chunk-size") + 1] == "256"
+        assert "--recompute-loss-function" in built
+        assert "ppo_async.training.memory.initialize" in built
         assert built[built.index("--save-hf") + 1] == "/artifacts/run/hf-{rollout_id}"
         assert "--optimizer-cpu-offload" in built
         assert "--overlap-cpu-optimizer-d2h-h2d" in built
         assert "--use-precision-aware-optimizer" in built
     assert "--rollout-function-path" not in sync
-    assert "--rollout-function-path" not in asynchronous
+    assert "ppo_async.training.stream.generate_rollout" in asynchronous
+    assert "ppo_async.training.stream.StreamDataSource" in asynchronous
+    assert "--colocate" in sync
+    assert "--colocate" not in asynchronous
+    assert "--rollout-sample-hook-path" not in asynchronous
     assert "--use-rollout-logprobs" in sync
     assert "--use-rollout-logprobs" in asynchronous
     assert "--use-tis" not in asynchronous
@@ -319,11 +322,10 @@ def test_scalar_tracking_writes_exact_ten_example_windows(tmp_path: Path, monkey
     assert len(tracking["pending"]) == 6
 
 
-def test_modal_entrypoint_requests_four_strict_h100s() -> None:
+def test_modal_entrypoints_request_only_needed_gpus() -> None:
     source = (ROOT / "modal_train.py").read_text(encoding="utf-8")
-    assert '"request": "H100!:4"' in (ROOT / "config/experiment.json").read_text()
-    assert "gpu=GPU_REQUEST" in source
-    assert '"--num-gpus", "4"' in source
+    assert 'gpu="H100!:1"' in source and 'gpu="H100!:2"' in source
+    assert '"--num-gpus", str(gpu_count(arm))' in source
     assert "training_examples <= maximum < 100" in source
 
 
