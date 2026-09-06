@@ -1,4 +1,4 @@
-"""Construct pinned SLIME commands for all three experiment arms."""
+"""Construct pinned SLIME commands for the experiment arms."""
 
 from __future__ import annotations
 
@@ -248,7 +248,14 @@ def build_train_command(
     else:
         command.extend(["--data-source-path", "ppo_async.training.stream.StreamDataSource",
                         "--rollout-function-path", "ppo_async.training.stream.generate_rollout"])
-    if selected_arm["dis"]:
+    if arm == "async_ppo_dis_masking":
+        command.extend([
+            "--use-rollout-logprobs",
+            "--loss-type", "custom_loss",
+            "--custom-loss-function-path",
+            "ppo_async.training.dis.direct_dis_policy_loss",
+        ])
+    elif selected_arm["dis"]:
         # SLIME's TIS path recomputes the learner-policy log-probabilities and
         # compares them with rollout_log_probs.  Its validator deliberately
         # rejects --use-rollout-logprobs together with --use-tis because that

@@ -84,7 +84,7 @@ def test_active_experiment_has_two_exact_checkpoint_boundaries():
 
 
 @pytest.mark.parametrize("failure", [False, True])
-def test_eval_finishes_or_fails_before_checkpoint_is_committed(monkeypatch, failure):
+def test_selection_results_are_committed_only_after_eval_succeeds(monkeypatch, failure):
     import sys
     from ppo_async.training import driver
     calls = []
@@ -166,7 +166,7 @@ def test_completion_gate_rejects_final_eval_of_wrong_checkpoint(tmp_path, monkey
         artifacts.validate_production_artifacts(tmp_path, **kwargs)
 
 
-@pytest.mark.parametrize("arm", ["sync_ppo", "async_ppo_dis"])
+@pytest.mark.parametrize("arm", ["sync_ppo", "async_ppo_dis", "async_ppo_dis_masking"])
 @pytest.mark.parametrize("fails", [False, True])
 def test_final_ray_workers_inherit_final_log_path(tmp_path, monkeypatch, arm, fails):
     from contextlib import nullcontext

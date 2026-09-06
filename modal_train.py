@@ -23,7 +23,7 @@ REMOTE_ROOT = Path("/workspace/PPO_ASYNC")
 CONFIG_ROOT = PROJECT_ROOT if (PROJECT_ROOT / "config/experiment.json").is_file() else REMOTE_ROOT
 sys.path.insert(0, str(CONFIG_ROOT / "src"))
 
-from ppo_async.config import arm_config, load_experiment, gpu_count, gpu_request  # noqa: E402
+from ppo_async.config import arm_config, load_experiment, gpu_count, gpu_request, implementation_digest  # noqa: E402
 from ppo_async.training.driver import role_slices  # noqa: E402
 
 
@@ -502,7 +502,7 @@ def preflight_final_commands() -> dict[str, Any]:
         if "PPO_ASYNC_PARSE_OK" not in completed.stdout:
             raise RuntimeError(f"{arm} did not reach the parse-only completion gate")
         validated.append(arm)
-    return {"status": "valid", "arms": validated}
+    return {"status": "valid", "arms": validated, "implementation_sha256": implementation_digest()}
 
 
 @app.function(image=image, cpu=1, memory=512,
@@ -797,7 +797,7 @@ def train_sync(mode, arm, run_name, training_examples=16, num_rollouts=1):
 
 @app.function(gpu="H200:2", **_worker_options)
 def train_async(mode, arm, run_name, training_examples=16, num_rollouts=1):
-    if arm not in {"async_ppo", "async_ppo_dis"}:
+    if arm not in {"async_ppo", "async_ppo_dis", "async_ppo_dis_masking"}:
         raise ValueError("two-GPU worker requires an async arm")
     if mode in {"final", "integration-smoke"}:
         return _run_final(arm, run_name, integration_smoke=mode == "integration-smoke")

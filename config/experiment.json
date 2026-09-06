@@ -52,6 +52,12 @@
       "dis": true,
       "weight_publish_interval": 1,
       "max_policy_lag": 4
+    },
+    "async_ppo_dis_masking": {
+      "driver": "asynchronous",
+      "dis": true,
+      "weight_publish_interval": 1,
+      "max_policy_lag": 4
     }
   },
   "ppo": {

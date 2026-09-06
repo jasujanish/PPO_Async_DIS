@@ -55,8 +55,9 @@ class StreamDataSource(RolloutDataSource):
         with self.lock:
             index = group[0].index
             count = self.retries.get(index, 0) + 1
-            if count > 3:
-                raise RuntimeError(f"prompt {index} exceeded three policy-age retries")
+            # Age can only increase when the learner advances. With a finite
+            # update budget, retries eventually run against a stationary policy;
+            # a long valid proof must not terminate the run after three retries.
             self.retries[index] = count
             self.replay.append(index)
 

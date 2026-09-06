@@ -192,7 +192,7 @@ def test_policy_versions_and_lag_are_audited(tmp_path, monkeypatch) -> None:
     assert "policy_version_error" in unknown.metadata
 
 
-def test_launcher_selects_three_distinct_loops() -> None:
+def test_launcher_selects_distinct_objectives() -> None:
     config = load_experiment(ROOT / "config/experiment.json")
 
     def command(arm: str) -> list[str]:
@@ -210,7 +210,8 @@ def test_launcher_selects_three_distinct_loops() -> None:
     sync = command("sync_ppo")
     asynchronous = command("async_ppo")
     dis = command("async_ppo_dis")
-    for built in (sync, asynchronous, dis):
+    direct = command("async_ppo_dis_masking")
+    for built in (sync, asynchronous, dis, direct):
         assert built[:4] == ["python3", "-m", "ppo_async.training.driver", "--train-backend"]
         assert not any(argument.endswith("driver.py") for argument in built)
         assert built[built.index("--actor-num-gpus-per-node") + 1] == "1"
@@ -241,6 +242,12 @@ def test_launcher_selects_three_distinct_loops() -> None:
     assert "--use-tis" in dis
     assert "--use-rollout-logprobs" not in dis
     assert "ppo_async.training.dis.apply_dis_mask" in dis
+    assert "--use-rollout-logprobs" in direct
+    assert "--use-tis" not in direct
+    assert "--get-mismatch-metrics" not in direct  # no extra baseline forward
+    assert direct[direct.index("--loss-type") + 1] == "custom_loss"
+    assert "ppo_async.training.dis.direct_dis_policy_loss" in direct
+    assert "ppo_async.training.stream.generate_rollout" in direct
 
 
 def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> None:

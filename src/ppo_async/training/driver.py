@@ -197,8 +197,9 @@ def _save_if_due(
         processed_examples=processed_examples,
         force_sync=force_sync,
     )
-    if not _production_mode(args):
-        _commit_checkpoint(args, rollout_id)
+    # Persist trained weights before evaluation can fail or the container ends.
+    # On recovery, finish a missing selection eval before consuming more data.
+    _commit_checkpoint(args, rollout_id)
     return True
 
 
@@ -237,6 +238,17 @@ def _evaluate_if_due(args: Any, rollout_id: int, rollout_manager: Any) -> bool:
     return True
 
 
+def _finish_pending_evaluation(args, rollout_manager):
+    path = os.environ.get("PPO_ASYNC_EVALUATION_LOG")
+    if not _production_mode(args) or args.start_rollout_id == 0 or not path:
+        return
+    rollout_id = args.start_rollout_id - 1
+    log = Path(path)
+    records = [json.loads(line) for line in log.read_text().splitlines() if line.strip()] if log.exists() else []
+    if not any(record["rollout_id"] == rollout_id for record in records):
+        _evaluate_if_due(args, rollout_id, rollout_manager)
+
+
 def train_synchronous(args: Any) -> None:
     import ray
     from slime.observability.logging_utils import finish_tracking
@@ -245,6 +257,7 @@ def train_synchronous(args: Any) -> None:
     published_version = int(getattr(args, "update_weight_start_version", 0)) + 1
     versions = {published_version: learner_updates_before(args, args.start_rollout_id)}
     try:
+        _finish_pending_evaluation(args, rollout_manager)
         for rollout_id in range(args.start_rollout_id, args.num_rollout):
             data = ray.get(rollout_manager.generate.remote(rollout_id))
             _event("rollout_batch_complete", rollout_id=rollout_id)
@@ -263,7 +276,7 @@ def train_synchronous(args: Any) -> None:
                 published_version=published_version,
                 learner_updates=versions[published_version],
             )
-            # Save first, evaluate that policy, then commit both as one recovery boundary.
+            # Persist the trained checkpoint, then evaluate that exact policy.
             _save_if_due(
                 args,
                 rollout_id,
@@ -287,6 +300,7 @@ def train_asynchronous(args: Any) -> None:
     published_version = int(getattr(args, "update_weight_start_version", 0)) + 1
     versions = {published_version: learner_updates_before(args, args.start_rollout_id)}
     try:
+        _finish_pending_evaluation(args, rollout_manager)
         for rollout_id in range(args.start_rollout_id, args.num_rollout):
             # This dequeues completed proofs. The persistent producer continues
             # generating through learner updates, saves and evaluation.
@@ -341,7 +355,7 @@ def main() -> None:
     arm = os.environ.get("PPO_ASYNC_ARM", "")
     if arm == "sync_ppo":
         train_synchronous(args)
-    elif arm in {"async_ppo", "async_ppo_dis"}:
+    elif arm in {"async_ppo", "async_ppo_dis", "async_ppo_dis_masking"}:
         train_asynchronous(args)
     else:
         raise ValueError(f"unknown PPO_ASYNC_ARM: {arm!r}")

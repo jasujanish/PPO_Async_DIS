@@ -14,7 +14,7 @@ import modal
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from ppo_async.config import ARMS  # noqa: E402
+from ppo_async.config import ARMS, implementation_digest  # noqa: E402
 
 
 APP_NAME = "ppo-async-qwen35-4b"
@@ -28,11 +28,11 @@ def _safe_prefix(value: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-prefix", default="balanced400-1pass-qwen35-4b-h200-b8-v5")
+    parser.add_argument("--run-prefix", default="experiment2-dis-masking-balanced400-h200-v1")
     parser.add_argument(
         "--arm",
-        choices=("selected", "all", "sync-ppo", "async-ppo", "async-ppo-dis"),
-        default="selected",
+        choices=("selected", "all", "sync-ppo", "async-ppo", "async-ppo-dis", "async-ppo-dis-masking"),
+        default="async-ppo-dis-masking",
     )
     parser.add_argument(
         "--skip-preflight",
@@ -50,6 +50,10 @@ def main() -> None:
     preflight = None
     if not args.skip_preflight:
         preflight = modal.Function.from_name(APP_NAME, "preflight_final_commands").remote()
+        if preflight.get("status") != "valid" or not set(selected).issubset(preflight.get("arms", [])):
+            raise RuntimeError("deployed app does not validate the selected arms; deploy the current modal_train.py first")
+        if preflight.get("implementation_sha256") != implementation_digest():
+            raise RuntimeError("deployed training code/config differs from this checkout; deploy the current modal_train.py first")
     function = modal.Function.from_name(APP_NAME, "train_final")
     calls = []
     for arm in selected:

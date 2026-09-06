@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import math
 from pathlib import Path
 from typing import Any
 
 
-ARMS = ("sync_ppo", "async_ppo", "async_ppo_dis")
+ARMS = ("sync_ppo", "async_ppo", "async_ppo_dis", "async_ppo_dis_masking")
 MODEL_ID = "Qwen/Qwen3.5-4B"
 def gpu_count(arm: str) -> int:
     if arm not in ARMS:
@@ -25,6 +27,15 @@ def project_root() -> Path:
 
 def default_config_path() -> Path:
     return project_root() / "config" / "experiment.json"
+
+
+def implementation_digest() -> str:
+    """Match the deployed training source/config to the local reviewed version."""
+    root = project_root()
+    digest = hashlib.sha256()
+    for path in sorted((root / "src").rglob("*.py")) + [default_config_path()]:
+        digest.update(str(path.relative_to(root)).encode() + b"\0" + path.read_bytes())
+    return digest.hexdigest()
 
 
 def load_experiment(path: Path | None = None) -> dict[str, Any]:
@@ -56,14 +67,14 @@ def validate_experiment(config: dict[str, Any]) -> None:
         "max_policy_lag": 0,
     }:
         raise ValueError("sync_ppo contract changed")
-    for name in ("async_ppo", "async_ppo_dis"):
+    for name in ("async_ppo", "async_ppo_dis", "async_ppo_dis_masking"):
         arm = arms[name]
         if arm["driver"] != "asynchronous":
             raise ValueError(f"{name} must use the asynchronous driver")
         if arm["weight_publish_interval"] != 1 or arm["max_policy_lag"] != 4:
             raise ValueError(f"{name} must publish every update with a four-update age cap")
-    if arms["async_ppo"]["dis"] or not arms["async_ppo_dis"]["dis"]:
-        raise ValueError("DIS must be enabled only in async_ppo_dis")
+    if arms["async_ppo"]["dis"] or not all(arms[name]["dis"] for name in ARMS[2:]):
+        raise ValueError("masking must be enabled only in the two masked async arms")
 
     data = config.get("data", {})
     if data.get("training") != [
@@ -78,6 +89,13 @@ def validate_experiment(config: dict[str, Any]) -> None:
         raise ValueError("evaluation sources must be Gaokao-Formal and FATE-M")
     if data.get("proofs_in_prompt") is not False:
         raise ValueError("reference proofs must never appear in prompts")
+
+    ppo = config.get("ppo", {})
+    low, high = ppo.get("dis_epsilon_low"), ppo.get("dis_epsilon_high")
+    if not isinstance(low, (int, float)) or not 0 < low < 1:
+        raise ValueError("DIS epsilon_low must be between zero and one")
+    if not isinstance(high, (int, float)) or not math.isfinite(high) or high <= 0:
+        raise ValueError("DIS epsilon_high must be positive and finite")
 
     rollout = config.get("rollout", {})
     if rollout.get("batch_size") != 8 or rollout.get("global_batch_size") != 8:

@@ -153,3 +153,35 @@ def test_checkpoint_resume_requires_rollout_weight_preservation(monkeypatch):
     groups = driver._placement_groups(args)
     assert allocations == [1]
     assert groups['actor'] == groups['critic'] == groups['rollout']
+
+
+def test_checkpoint_is_committed_before_selection_eval(tmp_path, monkeypatch):
+    ray = ModuleType('ray')
+    ray.get = lambda value: value
+    misc = ModuleType('slime.utils.misc')
+    misc.should_run_periodic_action = lambda *a: True
+    monkeypatch.setitem(sys.modules, 'ray', ray)
+    monkeypatch.setitem(sys.modules, 'slime.utils.misc', misc)
+    events = []
+    model = SimpleNamespace(save_model=lambda *a, **kw: events.append('save'))
+    args = SimpleNamespace(processed_example_budget=400, checkpoint_every_examples=200,
+                           num_rollout=50, rollout_batch_size=8, n_samples_per_prompt=1,
+                           offload_rollout=False, rollout_global_dataset=False)
+    monkeypatch.setattr(driver, '_snapshot_tracking_state', lambda *a: events.append('snapshot'))
+    monkeypatch.setattr(driver, '_commit_checkpoint', lambda *a: events.append('commit'))
+    monkeypatch.setattr(driver, '_event', lambda *a, **kw: None)
+    assert driver._save_if_due(args, 24, None, model, model, None, True)
+    assert events == ['save', 'save', 'snapshot', 'commit']
+
+
+@pytest.mark.parametrize('already_evaluated', [False, True])
+def test_resume_finishes_missing_selection_without_retraining(tmp_path, monkeypatch, already_evaluated):
+    path = tmp_path / 'evaluations.jsonl'
+    if already_evaluated:
+        path.write_text('{"rollout_id": 24}\n')
+    monkeypatch.setenv('PPO_ASYNC_EVALUATION_LOG', str(path))
+    calls = []
+    monkeypatch.setattr(driver, '_evaluate_if_due', lambda args, rid, manager: calls.append(rid))
+    args = SimpleNamespace(processed_example_budget=400, start_rollout_id=25)
+    driver._finish_pending_evaluation(args, None)
+    assert calls == ([] if already_evaluated else [24])

@@ -166,14 +166,16 @@ def test_age_is_checked_at_dequeue_with_mixed_versions_allowed(stream, monkeypat
     assert sample.metadata['policy_lag_updates'] == 5
 
 
-def test_retry_limit_prevents_unbounded_wasted_compute(stream):
+def test_long_proof_can_retry_more_than_three_times_without_losing_prompt(stream):
     data = source(stream)
     group = data.get_samples(1)[0]
-    for _ in range(3):
+    for _ in range(5):
         data.retry(group)
         group = data.get_samples(1)[0]
-    with pytest.raises(RuntimeError, match='three policy-age retries'):
-        data.retry(group)
+        assert group[0].index == 0
+    assert data.sample_group_index == 1
+    data.acknowledge(group)
+    assert not data.pending and not data.retries
 
 
 def test_publication_resumes_partial_proof_with_one_total_budget(stream, monkeypatch):
