@@ -1,0 +1,53 @@
+{
+  "status": "complete",
+  "mode": "base-eval",
+  "run_name": "base-qwen35-4b-full645-eval16-v5-20260905",
+  "model": {
+    "id": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "text_only": true,
+    "precision": "bf16"
+  },
+  "hardware": {
+    "requested": "H200:1",
+    "cuda_device_count": 1,
+    "gpus": [
+      "0, NVIDIA H200, 143771, GPU-0b060781-9742-1cf0-38dc-5754163c544a"
+    ],
+    "roles": {
+      "actor": [
+        0
+      ],
+      "critic": [
+        0
+      ],
+      "rollout": [
+        0
+      ]
+    }
+  },
+  "evaluation": {
+    "datasets": {
+      "fate-m": {
+        "examples": 150,
+        "pass_at_1": 0.04
+      },
+      "gaokao-formal": {
+        "examples": 495,
+        "pass_at_1": 0.012121212121212121
+      }
+    },
+    "event": "evaluation",
+    "processed_examples": 0,
+    "recorded_at": "2026-09-06T03:21:44.537045+00:00",
+    "rollout_id": -1
+  },
+  "data_sha256": {
+    "fate-m": "6d0d605a0154ba5e63566a3cfc1627754044cec2bcdfc43b79e5c5d61fe876a2",
+    "gaokao-formal": "75ab9062d9ee5888159991e2067ece6b1e422532d34da457dc349069178fd0a6",
+    "train": "ef131480ed911a93ed524245f17f9def3c41c649c1e2da3541db8ee2377165f7"
+  },
+  "started_at": "2026-09-06T02:16:38.226623+00:00",
+  "finished_at": "2026-09-06T03:21:59.189069+00:00",
+  "artifact_root": "/vol/artifacts/base-qwen35-4b-full645-eval16-v5-20260905"
+}

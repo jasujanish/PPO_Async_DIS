@@ -1,0 +1,40 @@
+{
+  "eval_paths": {
+    "fate-m": "prepared_data/balanced-400-v4/eval-fate-m.jsonl",
+    "gaokao-formal": "prepared_data/balanced-400-v4/eval-gaokao-formal.jsonl"
+  },
+  "evaluation_rows": {
+    "fate-m": 150,
+    "gaokao-formal": 495
+  },
+  "excluded": {
+    "eval_exact_match": 0,
+    "train_exact_duplicate": 24
+  },
+  "mode": "production",
+  "processed_example_budget": 400,
+  "reference_proof_fields_written": [],
+  "schema_version": 1,
+  "seed": 42,
+  "selection": {
+    "contract": "first-retained-canonical-source-order",
+    "lean_workbook_examples": 200,
+    "passes_per_dataset": 1,
+    "proofnet_verified_examples": 200
+  },
+  "sha256": {
+    "fate-m": "6d0d605a0154ba5e63566a3cfc1627754044cec2bcdfc43b79e5c5d61fe876a2",
+    "gaokao-formal": "75ab9062d9ee5888159991e2067ece6b1e422532d34da457dc349069178fd0a6",
+    "train": "ef131480ed911a93ed524245f17f9def3c41c649c1e2da3541db8ee2377165f7"
+  },
+  "source_unique_rows": {
+    "lean-workbook": 10434,
+    "proofnet-verified": 367
+  },
+  "train_path": "prepared_data/balanced-400-v4/train-final.jsonl",
+  "training_by_source": {
+    "lean-workbook": 200,
+    "proofnet-verified": 200
+  },
+  "training_examples": 400
+}

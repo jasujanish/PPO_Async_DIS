@@ -1,0 +1,424 @@
+{"actor": [0], "critic": [0], "event": "gpu_placement", "recorded_at": "2026-09-06T06:03:21.068892+00:00", "rollout": [1]}
+{"event": "weight_publish", "learner_updates": 0, "published_version": 1, "recorded_at": "2026-09-06T06:13:32.093125+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:15:43.224946+00:00", "rollout_id": 0, "sample_ids": [4, 7, 1, 3, 9, 0, 5, 6], "wait_seconds": 125.79183965300001}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:15:43.276036+00:00", "rollout_id": 0}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:22:37.293466+00:00", "rollout_id": 0, "seconds": 414.0154050350001}
+{"event": "weight_publish", "learner_updates": 1, "published_version": 2, "recorded_at": "2026-09-06T06:22:45.180580+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:22:45.190050+00:00", "rollout_id": 1, "sample_ids": [2, 12, 17, 10, 11, 8, 15, 20], "wait_seconds": 0.00015881199988143635}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:22:45.276949+00:00", "rollout_id": 1}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:26:09.254369+00:00", "rollout_id": 1, "seconds": 203.97297420099994}
+{"event": "weight_publish", "learner_updates": 2, "published_version": 3, "recorded_at": "2026-09-06T06:26:16.821063+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:26:16.829253+00:00", "rollout_id": 2, "sample_ids": [13, 16, 23, 22, 14, 21, 18, 19], "wait_seconds": 0.00013579899996329914}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:26:16.902715+00:00", "rollout_id": 2}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:27:15.441636+00:00", "rollout_id": 2, "seconds": 58.53605331299991}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:27:17.385512+00:00", "response_tokens": 8083, "sample_id": 33}
+{"event": "weight_publish", "learner_updates": 3, "published_version": 4, "recorded_at": "2026-09-06T06:27:28.280263+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:27:28.285963+00:00", "rollout_id": 3, "sample_ids": [25, 29, 30, 24, 26, 28, 27, 31], "wait_seconds": 0.00013884000009056763}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:27:28.320370+00:00", "rollout_id": 3}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:30:19.999814+00:00", "rollout_id": 3, "seconds": 171.67613558799985}
+{"event": "weight_publish", "learner_updates": 4, "published_version": 5, "recorded_at": "2026-09-06T06:30:26.476192+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:30:26.481425+00:00", "rollout_id": 4, "sample_ids": [36, 37, 32, 35, 39, 38, 43, 41], "wait_seconds": 0.00012759799983541598}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:30:26.520216+00:00", "rollout_id": 4}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:31:59.624258+00:00", "rollout_id": 4, "seconds": 93.101466888}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:32:01.092551+00:00", "response_tokens": 11558, "sample_id": 50}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:32:01.115545+00:00", "response_tokens": 11558, "sample_id": 48}
+{"event": "weight_publish", "learner_updates": 5, "published_version": 6, "recorded_at": "2026-09-06T06:32:07.717679+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:32:07.724645+00:00", "rollout_id": 5, "sample_ids": [40, 47, 42, 34, 33, 45, 52, 51], "wait_seconds": 0.0001556140000502637}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:32:07.776737+00:00", "rollout_id": 5}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:33:51.835456+00:00", "rollout_id": 5, "seconds": 104.05589261800014}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:33:53.375370+00:00", "response_tokens": 11041, "sample_id": 59}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:33:53.418978+00:00", "response_tokens": 11041, "sample_id": 58}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:33:53.433289+00:00", "response_tokens": 11041, "sample_id": 61}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:33:53.437612+00:00", "response_tokens": 10054, "sample_id": 62}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:33:53.441618+00:00", "response_tokens": 11041, "sample_id": 60}
+{"event": "weight_publish", "learner_updates": 6, "published_version": 7, "recorded_at": "2026-09-06T06:33:58.954128+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:33:58.960946+00:00", "rollout_id": 6, "sample_ids": [49, 44, 55, 46, 53, 54, 56, 48], "wait_seconds": 0.00013076799996269983}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:33:58.998497+00:00", "rollout_id": 6}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:35:37.154010+00:00", "rollout_id": 6, "seconds": 98.15263590500012}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:35:38.856304+00:00", "response_tokens": 11624, "sample_id": 64}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:35:38.872139+00:00", "response_tokens": 5001, "sample_id": 70}
+{"event": "weight_publish", "learner_updates": 7, "published_version": 8, "recorded_at": "2026-09-06T06:35:44.282444+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:35:44.289909+00:00", "rollout_id": 7, "sample_ids": [50, 62, 59, 61, 58, 66, 63, 57], "wait_seconds": 0.00014951499997550854}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:35:44.359852+00:00", "rollout_id": 7}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:38:39.163581+00:00", "rollout_id": 7, "seconds": 174.80127053600017}
+{"event": "weight_publish", "learner_updates": 8, "published_version": 9, "recorded_at": "2026-09-06T06:38:45.565589+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:38:45.575576+00:00", "rollout_id": 8, "sample_ids": [65, 60, 67, 71, 64, 69, 68, 73], "wait_seconds": 0.0001521250001133012}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:38:45.632956+00:00", "rollout_id": 8}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:40:18.611743+00:00", "rollout_id": 8, "seconds": 92.97605570699989}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:40:20.276283+00:00", "response_tokens": 10383, "sample_id": 81}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:40:20.296947+00:00", "response_tokens": 10383, "sample_id": 82}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:40:20.317542+00:00", "response_tokens": 10383, "sample_id": 83}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:40:20.355237+00:00", "response_tokens": 10383, "sample_id": 84}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:40:20.358881+00:00", "response_tokens": 10383, "sample_id": 86}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:40:20.362280+00:00", "response_tokens": 10383, "sample_id": 80}
+{"event": "weight_publish", "learner_updates": 9, "published_version": 10, "recorded_at": "2026-09-06T06:40:25.767831+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:40:25.774075+00:00", "rollout_id": 9, "sample_ids": [77, 75, 79, 72, 78, 76, 70, 85], "wait_seconds": 0.00011946299991905107}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:40:25.816745+00:00", "rollout_id": 9}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:41:15.207531+00:00", "rollout_id": 9, "seconds": 49.387808079000024}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:41:17.069950+00:00", "response_tokens": 16010, "sample_id": 82}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:41:17.094206+00:00", "response_tokens": 16010, "sample_id": 83}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:41:17.113199+00:00", "response_tokens": 585, "sample_id": 90}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:41:17.115829+00:00", "response_tokens": 451, "sample_id": 91}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:41:17.119038+00:00", "response_tokens": 5446, "sample_id": 88}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:41:17.123767+00:00", "response_tokens": 5446, "sample_id": 89}
+{"event": "weight_publish", "learner_updates": 10, "published_version": 11, "recorded_at": "2026-09-06T06:41:24.847681+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:42:39.813990+00:00", "rollout_id": 10, "sample_ids": [74, 87, 84, 86, 90, 81, 82, 91], "wait_seconds": 74.95711192399995}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:42:39.855396+00:00", "rollout_id": 10}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:43:37.711917+00:00", "rollout_id": 10, "seconds": 57.85432474299978}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:43:39.825512+00:00", "response_tokens": 6595, "sample_id": 94}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:43:39.844362+00:00", "response_tokens": 488, "sample_id": 102}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:43:39.848106+00:00", "response_tokens": 750, "sample_id": 101}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:43:39.863331+00:00", "response_tokens": 4166, "sample_id": 98}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:43:39.868956+00:00", "response_tokens": 6595, "sample_id": 96}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:43:39.884073+00:00", "response_tokens": 6006, "sample_id": 97}
+{"event": "weight_publish", "learner_updates": 11, "published_version": 12, "recorded_at": "2026-09-06T06:43:45.646059+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:43:59.688454+00:00", "rollout_id": 11, "sample_ids": [83, 93, 92, 88, 80, 95, 99, 102], "wait_seconds": 14.03329596399999}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:43:59.727672+00:00", "rollout_id": 11}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:45:55.468490+00:00", "rollout_id": 11, "seconds": 115.73872263500016}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:45:57.316268+00:00", "response_tokens": 2924, "sample_id": 111}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:45:57.328631+00:00", "response_tokens": 3901, "sample_id": 110}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:45:57.335751+00:00", "response_tokens": 6563, "sample_id": 106}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:45:57.354309+00:00", "response_tokens": 12966, "sample_id": 104}
+{"event": "weight_publish", "learner_updates": 12, "published_version": 13, "recorded_at": "2026-09-06T06:46:03.275202+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:46:03.283484+00:00", "rollout_id": 12, "sample_ids": [89, 100, 98, 101, 105, 103, 96, 108], "wait_seconds": 0.00011548500015123864}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:46:03.321134+00:00", "rollout_id": 12}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:47:14.436621+00:00", "rollout_id": 12, "seconds": 71.11324439200007}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:47:16.077971+00:00", "response_tokens": 11536, "sample_id": 111}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:47:16.104195+00:00", "response_tokens": 3019, "sample_id": 115}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:47:16.108932+00:00", "response_tokens": 15175, "sample_id": 106}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:47:16.120414+00:00", "response_tokens": 3667, "sample_id": 113}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:47:16.131344+00:00", "response_tokens": 12513, "sample_id": 110}
+{"event": "weight_publish", "learner_updates": 13, "published_version": 14, "recorded_at": "2026-09-06T06:47:21.500311+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:48:09.620887+00:00", "rollout_id": 13, "sample_ids": [94, 97, 107, 109, 104, 112, 114, 116], "wait_seconds": 48.11341171899994}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:48:09.667102+00:00", "rollout_id": 13}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:49:00.092393+00:00", "rollout_id": 13, "seconds": 50.42279799900007}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:49:02.304555+00:00", "response_tokens": 15113, "sample_id": 115}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:49:02.325965+00:00", "response_tokens": 1787, "sample_id": 123}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:49:02.329278+00:00", "response_tokens": 6070, "sample_id": 119}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:49:02.336258+00:00", "response_tokens": 4837, "sample_id": 121}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:49:02.355417+00:00", "response_tokens": 15761, "sample_id": 113}
+{"event": "weight_publish", "learner_updates": 14, "published_version": 15, "recorded_at": "2026-09-06T06:49:09.993025+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:49:18.114266+00:00", "rollout_id": 14, "sample_ids": [117, 118, 106, 111, 110, 122, 113, 115], "wait_seconds": 8.11539390400003}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:49:18.161001+00:00", "rollout_id": 14}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:50:16.625851+00:00", "rollout_id": 14, "seconds": 58.460195470000144}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:50:18.579006+00:00", "response_tokens": 12897, "sample_id": 121}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:50:18.592539+00:00", "response_tokens": 5, "sample_id": 134}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:50:18.595717+00:00", "response_tokens": 155, "sample_id": 133}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:50:18.619700+00:00", "response_tokens": 7833, "sample_id": 124}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:50:18.625451+00:00", "response_tokens": 7833, "sample_id": 125}
+{"event": "weight_publish", "learner_updates": 15, "published_version": 16, "recorded_at": "2026-09-06T06:50:24.357254+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:50:27.726655+00:00", "rollout_id": 15, "sample_ids": [119, 127, 120, 130, 128, 129, 132, 126], "wait_seconds": 3.365030007000314}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:50:27.751641+00:00", "rollout_id": 15}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:50:58.204261+00:00", "rollout_id": 15, "seconds": 30.45035761500003}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:51:00.044652+00:00", "response_tokens": 4309, "sample_id": 134}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:51:00.050712+00:00", "response_tokens": 12137, "sample_id": 124}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:51:00.063978+00:00", "response_tokens": 12137, "sample_id": 125}
+{"event": "weight_publish", "learner_updates": 16, "published_version": 17, "recorded_at": "2026-09-06T06:51:07.152029+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:51:52.030797+00:00", "rollout_id": 16, "sample_ids": [133, 121, 131, 124, 125, 135, 138, 136], "wait_seconds": 44.87201529399999}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:51:52.071246+00:00", "rollout_id": 16}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:52:42.535906+00:00", "rollout_id": 16, "seconds": 50.462375244000214}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:52:44.343588+00:00", "response_tokens": 628, "sample_id": 145}
+{"event": "weight_publish", "learner_updates": 17, "published_version": 18, "recorded_at": "2026-09-06T06:52:49.812252+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:53:48.152310+00:00", "rollout_id": 17, "sample_ids": [142, 123, 139, 140, 141, 134, 147, 143], "wait_seconds": 58.33390161000034}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:53:48.179833+00:00", "rollout_id": 17}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:54:22.314394+00:00", "rollout_id": 17, "seconds": 34.1321866899998}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:54:23.563727+00:00", "response_tokens": 12867, "sample_id": 145}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:54:23.586393+00:00", "response_tokens": 3963, "sample_id": 150}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:54:23.593044+00:00", "response_tokens": 141, "sample_id": 153}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:54:23.598105+00:00", "response_tokens": 7083, "sample_id": 146}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:54:23.616209+00:00", "response_tokens": 3907, "sample_id": 151}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:54:23.619263+00:00", "response_tokens": 7083, "sample_id": 148}
+{"event": "weight_publish", "learner_updates": 18, "published_version": 19, "recorded_at": "2026-09-06T06:54:28.835782+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:56:12.868581+00:00", "rollout_id": 18, "sample_ids": [144, 152, 137, 154, 149, 146, 145, 156], "wait_seconds": 104.02532367499998}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:56:12.906661+00:00", "rollout_id": 18}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:56:53.196242+00:00", "rollout_id": 18, "seconds": 40.28674201700005}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:56:54.472164+00:00", "response_tokens": 230, "sample_id": 162}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:56:54.479857+00:00", "response_tokens": 1799, "sample_id": 160}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:56:54.500913+00:00", "response_tokens": 14505, "sample_id": 155}
+{"event": "weight_publish", "learner_updates": 19, "published_version": 20, "recorded_at": "2026-09-06T06:56:59.015480+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:57:27.247610+00:00", "rollout_id": 19, "sample_ids": [150, 151, 153, 161, 148, 155, 157, 159], "wait_seconds": 28.22690576800005}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:57:27.295761+00:00", "rollout_id": 19}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T06:58:25.720236+00:00", "rollout_id": 19, "seconds": 58.42203106399984}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T06:58:27.155944+00:00", "response_tokens": 12273, "sample_id": 160}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:58:27.172424+00:00", "response_tokens": 6218, "sample_id": 168}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:58:27.197101+00:00", "response_tokens": 8591, "sample_id": 165}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T06:58:27.203450+00:00", "response_tokens": 10359, "sample_id": 163}
+{"event": "weight_publish", "learner_updates": 20, "published_version": 21, "recorded_at": "2026-09-06T06:58:32.080166+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T06:59:52.200290+00:00", "rollout_id": 20, "sample_ids": [158, 162, 166, 164, 167, 171, 169, 168], "wait_seconds": 80.11477781799977}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T06:59:52.229706+00:00", "rollout_id": 20}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:00:24.887886+00:00", "rollout_id": 20, "seconds": 32.65487191000011}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.479347+00:00", "response_tokens": 12268, "sample_id": 172}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.483848+00:00", "response_tokens": 12548, "sample_id": 170}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.512142+00:00", "response_tokens": 354, "sample_id": 177}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.518547+00:00", "response_tokens": 3727, "sample_id": 175}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.521330+00:00", "response_tokens": 3245, "sample_id": 176}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.552104+00:00", "response_tokens": 9389, "sample_id": 174}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:00:26.554822+00:00", "response_tokens": 10229, "sample_id": 173}
+{"event": "weight_publish", "learner_updates": 21, "published_version": 22, "recorded_at": "2026-09-06T07:00:32.053031+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:02:41.176347+00:00", "rollout_id": 21, "sample_ids": [165, 160, 163, 176, 172, 170, 173, 181], "wait_seconds": 129.119134047}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:02:41.229378+00:00", "rollout_id": 21}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:03:47.852712+00:00", "rollout_id": 21, "seconds": 66.6204757380001}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:03:49.242473+00:00", "response_tokens": 9559, "sample_id": 180}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:03:49.257503+00:00", "response_tokens": 14066, "sample_id": 179}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:03:49.264537+00:00", "response_tokens": 237, "sample_id": 188}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:03:49.269873+00:00", "response_tokens": 7857, "sample_id": 182}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:03:49.293961+00:00", "response_tokens": 6425, "sample_id": 185}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:03:49.298711+00:00", "response_tokens": 7556, "sample_id": 183}
+{"event": "weight_publish", "learner_updates": 22, "published_version": 23, "recorded_at": "2026-09-06T07:03:54.173819+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:04:25.613868+00:00", "rollout_id": 22, "sample_ids": [174, 177, 184, 175, 187, 178, 186, 179], "wait_seconds": 31.43241034399989}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:04:25.659621+00:00", "rollout_id": 22}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:05:22.903033+00:00", "rollout_id": 22, "seconds": 57.24090388100012}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:05:24.340682+00:00", "response_tokens": 8398, "sample_id": 190}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:05:24.350071+00:00", "response_tokens": 1129, "sample_id": 192}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:05:24.366076+00:00", "response_tokens": 6895, "sample_id": 191}
+{"event": "weight_publish", "learner_updates": 23, "published_version": 24, "recorded_at": "2026-09-06T07:05:31.544728+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:06:18.468368+00:00", "rollout_id": 23, "sample_ids": [188, 185, 183, 189, 180, 190, 182, 197], "wait_seconds": 46.91617546000043}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:06:18.517146+00:00", "rollout_id": 23}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:07:13.317141+00:00", "rollout_id": 23, "seconds": 54.7969909630001}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:07:14.448478+00:00", "response_tokens": 13158, "sample_id": 192}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:07:14.465969+00:00", "response_tokens": 326, "sample_id": 203}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:07:14.470872+00:00", "response_tokens": 2351, "sample_id": 202}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:07:14.495498+00:00", "response_tokens": 11341, "sample_id": 195}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:07:14.521014+00:00", "response_tokens": 8211, "sample_id": 198}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:07:14.525210+00:00", "response_tokens": 8305, "sample_id": 196}
+{"event": "weight_publish", "learner_updates": 24, "published_version": 25, "recorded_at": "2026-09-06T07:07:19.185763+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:07:47.307632+00:00", "rollout_id": 24, "sample_ids": [191, 194, 200, 201, 193, 199, 204, 192], "wait_seconds": 28.115831762000198}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:07:47.347849+00:00", "rollout_id": 24}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:08:26.773225+00:00", "rollout_id": 24, "seconds": 39.42198848399994}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:08:28.107392+00:00", "response_tokens": 10318, "sample_id": 202}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:08:28.117495+00:00", "response_tokens": 5466, "sample_id": 206}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:08:28.129229+00:00", "response_tokens": 830, "sample_id": 209}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:08:28.134877+00:00", "response_tokens": 4432, "sample_id": 208}
+{"event": "weight_publish", "learner_updates": 25, "published_version": 26, "recorded_at": "2026-09-06T07:08:32.768388+00:00"}
+{"event": "checkpoint", "force_sync": true, "processed_examples": 200, "recorded_at": "2026-09-06T07:13:17.825531+00:00", "rollout_id": 24}
+{"event": "evaluation", "processed_examples": 200, "recorded_at": "2026-09-06T07:31:43.360735+00:00", "rollout_id": 24}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:31:43.376046+00:00", "rollout_id": 25, "sample_ids": [196, 198, 203, 195, 205, 207, 208, 212], "wait_seconds": 0.00013193600079830503}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:31:43.440687+00:00", "rollout_id": 25}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:33:03.093849+00:00", "rollout_id": 25, "seconds": 79.65122808100023}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:33:04.515833+00:00", "response_tokens": 9621, "sample_id": 217}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:33:04.539440+00:00", "response_tokens": 9621, "sample_id": 219}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:33:04.565744+00:00", "response_tokens": 9621, "sample_id": 222}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:33:04.570481+00:00", "response_tokens": 9621, "sample_id": 216}
+{"event": "weight_publish", "learner_updates": 26, "published_version": 27, "recorded_at": "2026-09-06T07:33:10.010716+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:33:10.018562+00:00", "rollout_id": 26, "sample_ids": [209, 202, 213, 215, 210, 206, 214, 211], "wait_seconds": 0.00013066399969829945}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:33:10.076068+00:00", "rollout_id": 26}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:34:08.314092+00:00", "rollout_id": 26, "seconds": 58.23489212700042}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:34:09.761360+00:00", "response_tokens": 3, "sample_id": 230}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:34:09.765964+00:00", "response_tokens": 6545, "sample_id": 225}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:34:09.777976+00:00", "response_tokens": 4329, "sample_id": 228}
+{"event": "weight_publish", "learner_updates": 27, "published_version": 28, "recorded_at": "2026-09-06T07:34:15.461254+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:35:18.497339+00:00", "rollout_id": 27, "sample_ids": [223, 218, 220, 221, 224, 219, 216, 226], "wait_seconds": 63.029529886999626}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:35:18.538493+00:00", "rollout_id": 27}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:35:59.099870+00:00", "rollout_id": 27, "seconds": 40.55893261499932}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:36:00.847891+00:00", "response_tokens": 4609, "sample_id": 231}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:36:00.864457+00:00", "response_tokens": 4609, "sample_id": 232}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:36:00.872565+00:00", "response_tokens": 2716, "sample_id": 235}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:36:00.877039+00:00", "response_tokens": 2242, "sample_id": 237}
+{"event": "weight_publish", "learner_updates": 28, "published_version": 29, "recorded_at": "2026-09-06T07:36:06.368683+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:36:55.834517+00:00", "rollout_id": 28, "sample_ids": [227, 229, 225, 228, 217, 222, 233, 231], "wait_seconds": 49.45961565400012}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:36:55.882241+00:00", "rollout_id": 28}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:37:53.046490+00:00", "rollout_id": 28, "seconds": 57.161650332000136}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:37:54.692122+00:00", "response_tokens": 4360, "sample_id": 242}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:37:54.710135+00:00", "response_tokens": 1591, "sample_id": 246}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:37:54.713424+00:00", "response_tokens": 7032, "sample_id": 239}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:37:54.732934+00:00", "response_tokens": 4286, "sample_id": 244}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:37:54.739750+00:00", "response_tokens": 16062, "sample_id": 235}
+{"event": "weight_publish", "learner_updates": 29, "published_version": 30, "recorded_at": "2026-09-06T07:38:01.090071+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:38:01.196851+00:00", "rollout_id": 29, "sample_ids": [232, 230, 234, 240, 236, 238, 245, 235], "wait_seconds": 0.09725163399980374}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:38:01.236093+00:00", "rollout_id": 29}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:38:44.370102+00:00", "rollout_id": 29, "seconds": 43.13151039299919}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:38:45.925107+00:00", "response_tokens": 7148, "sample_id": 246}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:38:45.944985+00:00", "response_tokens": 9843, "sample_id": 244}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:38:45.953437+00:00", "response_tokens": 1696, "sample_id": 250}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:38:45.964928+00:00", "response_tokens": 2226, "sample_id": 249}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:38:45.969231+00:00", "response_tokens": 3847, "sample_id": 248}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:38:45.972829+00:00", "response_tokens": 5231, "sample_id": 247}
+{"event": "weight_publish", "learner_updates": 30, "published_version": 31, "recorded_at": "2026-09-06T07:38:52.553262+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:40:38.246293+00:00", "rollout_id": 30, "sample_ids": [237, 242, 239, 243, 241, 250, 251, 254], "wait_seconds": 105.6835827750001}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:40:38.274764+00:00", "rollout_id": 30}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:41:16.369097+00:00", "rollout_id": 30, "seconds": 38.091433485999914}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:41:17.991354+00:00", "response_tokens": 2130, "sample_id": 256}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:41:17.993990+00:00", "response_tokens": 16285, "sample_id": 252}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:41:18.003028+00:00", "response_tokens": 457, "sample_id": 257}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:41:18.019111+00:00", "response_tokens": 9267, "sample_id": 253}
+{"event": "weight_publish", "learner_updates": 31, "published_version": 32, "recorded_at": "2026-09-06T07:41:23.521073+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:41:57.036722+00:00", "rollout_id": 31, "sample_ids": [248, 249, 244, 246, 258, 259, 247, 260], "wait_seconds": 33.50792086399997}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:41:57.084582+00:00", "rollout_id": 31}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:42:56.845967+00:00", "rollout_id": 31, "seconds": 59.75923336000051}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:42:58.458576+00:00", "response_tokens": 11623, "sample_id": 257}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:42:58.497148+00:00", "response_tokens": 3616, "sample_id": 267}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:42:58.501310+00:00", "response_tokens": 6776, "sample_id": 263}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:42:58.504586+00:00", "response_tokens": 5918, "sample_id": 266}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:42:58.508510+00:00", "response_tokens": 8037, "sample_id": 261}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:42:58.521340+00:00", "response_tokens": 6167, "sample_id": 265}
+{"event": "weight_publish", "learner_updates": 32, "published_version": 33, "recorded_at": "2026-09-06T07:43:05.217214+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:43:46.447430+00:00", "rollout_id": 32, "sample_ids": [256, 255, 262, 252, 253, 268, 265, 257], "wait_seconds": 41.221469800000705}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:43:46.491645+00:00", "rollout_id": 32}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:44:34.034613+00:00", "rollout_id": 32, "seconds": 47.539829210999414}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:44:35.465334+00:00", "response_tokens": 15952, "sample_id": 266}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:44:35.492982+00:00", "response_tokens": 2415, "sample_id": 273}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:44:35.498670+00:00", "response_tokens": 5267, "sample_id": 271}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:44:35.501959+00:00", "response_tokens": 5121, "sample_id": 272}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:44:35.523729+00:00", "response_tokens": 10034, "sample_id": 269}
+{"event": "weight_publish", "learner_updates": 33, "published_version": 34, "recorded_at": "2026-09-06T07:44:40.880630+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:45:44.822039+00:00", "rollout_id": 33, "sample_ids": [264, 267, 261, 274, 270, 273, 272, 278], "wait_seconds": 63.93469818500034}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:45:44.861276+00:00", "rollout_id": 33}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:46:26.924217+00:00", "rollout_id": 33, "seconds": 42.0599773569993}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:46:28.481356+00:00", "response_tokens": 10889, "sample_id": 276}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:46:28.508440+00:00", "response_tokens": 756, "sample_id": 282}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:46:28.512028+00:00", "response_tokens": 2629, "sample_id": 280}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:46:28.514721+00:00", "response_tokens": 2430, "sample_id": 281}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:46:28.520039+00:00", "response_tokens": 5077, "sample_id": 279}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:46:28.541684+00:00", "response_tokens": 10793, "sample_id": 277}
+{"event": "weight_publish", "learner_updates": 34, "published_version": 35, "recorded_at": "2026-09-06T07:46:34.080214+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:47:17.252435+00:00", "rollout_id": 34, "sample_ids": [263, 266, 275, 269, 276, 279, 283, 271], "wait_seconds": 43.16695540599994}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:47:17.303443+00:00", "rollout_id": 34}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:48:20.372612+00:00", "rollout_id": 34, "seconds": 63.06608299300024}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:48:21.801507+00:00", "response_tokens": 13061, "sample_id": 282}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:48:21.806038+00:00", "response_tokens": 14934, "sample_id": 280}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:48:21.822124+00:00", "response_tokens": 6927, "sample_id": 287}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:48:21.825407+00:00", "response_tokens": 6677, "sample_id": 288}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:48:21.846112+00:00", "response_tokens": 5112, "sample_id": 289}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:48:21.852778+00:00", "response_tokens": 2681, "sample_id": 291}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:48:21.865525+00:00", "response_tokens": 4190, "sample_id": 290}
+{"event": "weight_publish", "learner_updates": 35, "published_version": 36, "recorded_at": "2026-09-06T07:48:27.525343+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:49:47.386277+00:00", "rollout_id": 35, "sample_ids": [284, 286, 285, 277, 289, 292, 291, 288], "wait_seconds": 79.85283883500051}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:49:47.423748+00:00", "rollout_id": 35}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:50:34.459780+00:00", "rollout_id": 35, "seconds": 47.032438858000205}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:50:35.881979+00:00", "response_tokens": 3882, "sample_id": 296}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:50:35.888076+00:00", "response_tokens": 10418, "sample_id": 293}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:50:35.892136+00:00", "response_tokens": 5783, "sample_id": 295}
+{"event": "weight_publish", "learner_updates": 36, "published_version": 37, "recorded_at": "2026-09-06T07:50:41.745499+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:51:29.725094+00:00", "rollout_id": 36, "sample_ids": [280, 282, 297, 281, 293, 298, 294, 290], "wait_seconds": 47.97337772300034}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:51:29.775141+00:00", "rollout_id": 36}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:52:25.379774+00:00", "rollout_id": 36, "seconds": 55.60094229199967}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:52:26.815256+00:00", "response_tokens": 8770, "sample_id": 300}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:52:26.830755+00:00", "response_tokens": 229, "sample_id": 305}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:52:26.835128+00:00", "response_tokens": 3529, "sample_id": 304}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:52:26.859203+00:00", "response_tokens": 6399, "sample_id": 303}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:52:26.861882+00:00", "response_tokens": 8105, "sample_id": 301}
+{"event": "weight_publish", "learner_updates": 37, "published_version": 38, "recorded_at": "2026-09-06T07:52:32.787689+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:55:10.469082+00:00", "rollout_id": 37, "sample_ids": [287, 299, 302, 296, 295, 305, 301, 300], "wait_seconds": 157.67542124300053}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:55:10.515206+00:00", "rollout_id": 37}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:56:14.228374+00:00", "rollout_id": 37, "seconds": 63.70954095199977}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:56:15.825111+00:00", "response_tokens": 5659, "sample_id": 313}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:56:15.828686+00:00", "response_tokens": 6997, "sample_id": 312}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:56:15.845004+00:00", "response_tokens": 2410, "sample_id": 315}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:56:15.848464+00:00", "response_tokens": 85, "sample_id": 317}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:56:15.853119+00:00", "response_tokens": 1626, "sample_id": 316}
+{"event": "weight_publish", "learner_updates": 38, "published_version": 39, "recorded_at": "2026-09-06T07:56:21.833508+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:56:53.363802+00:00", "rollout_id": 38, "sample_ids": [310, 303, 304, 307, 311, 314, 306, 317], "wait_seconds": 31.521471052999914}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:56:53.417534+00:00", "rollout_id": 38}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T07:57:46.609989+00:00", "rollout_id": 38, "seconds": 53.18839741700049}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T07:57:48.201222+00:00", "response_tokens": 11813, "sample_id": 316}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:57:48.220277+00:00", "response_tokens": 684, "sample_id": 322}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:57:48.223739+00:00", "response_tokens": 1460, "sample_id": 321}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:57:48.228113+00:00", "response_tokens": 4945, "sample_id": 320}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T07:57:48.247627+00:00", "response_tokens": 9527, "sample_id": 318}
+{"event": "weight_publish", "learner_updates": 39, "published_version": 40, "recorded_at": "2026-09-06T07:57:54.404798+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T07:59:27.614373+00:00", "rollout_id": 39, "sample_ids": [308, 313, 315, 319, 323, 312, 309, 324], "wait_seconds": 93.20034651599963}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T07:59:27.659450+00:00", "rollout_id": 39}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:00:19.158059+00:00", "rollout_id": 39, "seconds": 51.49566749200039}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:00:20.799892+00:00", "response_tokens": 7834, "sample_id": 326}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:00:20.816790+00:00", "response_tokens": 144, "sample_id": 333}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:00:20.820318+00:00", "response_tokens": 2770, "sample_id": 330}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:00:20.824863+00:00", "response_tokens": 3458, "sample_id": 329}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:00:20.837783+00:00", "response_tokens": 5258, "sample_id": 328}
+{"event": "weight_publish", "learner_updates": 40, "published_version": 41, "recorded_at": "2026-09-06T08:00:27.247852+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:00:53.592943+00:00", "rollout_id": 40, "sample_ids": [320, 327, 316, 325, 318, 322, 331, 326], "wait_seconds": 26.33690471099999}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:00:53.641903+00:00", "rollout_id": 40}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:01:54.784436+00:00", "rollout_id": 40, "seconds": 61.138737660000515}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:01:56.492700+00:00", "response_tokens": 10319, "sample_id": 333}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:01:56.519563+00:00", "response_tokens": 347, "sample_id": 340}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:01:56.524234+00:00", "response_tokens": 2797, "sample_id": 339}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:01:56.528632+00:00", "response_tokens": 13633, "sample_id": 329}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:01:56.532421+00:00", "response_tokens": 2957, "sample_id": 338}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:01:56.562445+00:00", "response_tokens": 9957, "sample_id": 334}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:01:56.566992+00:00", "response_tokens": 6905, "sample_id": 335}
+{"event": "weight_publish", "learner_updates": 41, "published_version": 42, "recorded_at": "2026-09-06T08:02:03.138263+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:02:26.633121+00:00", "rollout_id": 41, "sample_ids": [328, 336, 332, 321, 330, 337, 338, 329], "wait_seconds": 23.487734174999787}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:02:26.678139+00:00", "rollout_id": 41}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:03:19.006216+00:00", "rollout_id": 41, "seconds": 52.32471615000031}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:03:20.684514+00:00", "response_tokens": 8794, "sample_id": 340}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:03:20.706792+00:00", "response_tokens": 929, "sample_id": 347}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:03:20.722338+00:00", "response_tokens": 2015, "sample_id": 345}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:03:20.725347+00:00", "response_tokens": 1661, "sample_id": 346}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:03:20.742037+00:00", "response_tokens": 5692, "sample_id": 343}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:03:20.744342+00:00", "response_tokens": 4543, "sample_id": 344}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:03:20.751940+00:00", "response_tokens": 15352, "sample_id": 335}
+{"event": "weight_publish", "learner_updates": 42, "published_version": 43, "recorded_at": "2026-09-06T08:03:27.238135+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:04:36.273340+00:00", "rollout_id": 42, "sample_ids": [342, 334, 339, 333, 341, 335, 344, 348], "wait_seconds": 69.0282752840003}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:04:36.324833+00:00", "rollout_id": 42}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:05:36.713621+00:00", "rollout_id": 42, "seconds": 60.385908205000305}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:05:38.522994+00:00", "response_tokens": 15128, "sample_id": 347}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:05:38.535938+00:00", "response_tokens": 328, "sample_id": 352}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:05:38.584391+00:00", "response_tokens": 13164, "sample_id": 349}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:05:38.588090+00:00", "response_tokens": 16214, "sample_id": 345}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:05:38.598854+00:00", "response_tokens": 6696, "sample_id": 351}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:05:38.620290+00:00", "response_tokens": 10915, "sample_id": 350}
+{"event": "weight_publish", "learner_updates": 43, "published_version": 44, "recorded_at": "2026-09-06T08:05:45.058175+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:06:36.244246+00:00", "rollout_id": 43, "sample_ids": [346, 349, 340, 343, 350, 353, 351, 352], "wait_seconds": 51.17794155200045}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:06:36.306171+00:00", "rollout_id": 43}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:07:41.554369+00:00", "rollout_id": 43, "seconds": 65.24479167700065}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.321339+00:00", "response_tokens": 10234, "sample_id": 354}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.330259+00:00", "response_tokens": 8122, "sample_id": 355}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.345959+00:00", "response_tokens": 8025, "sample_id": 356}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.366247+00:00", "response_tokens": 4797, "sample_id": 360}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.374280+00:00", "response_tokens": 4579, "sample_id": 361}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.409323+00:00", "response_tokens": 8021, "sample_id": 357}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.415367+00:00", "response_tokens": 7241, "sample_id": 358}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:07:43.418938+00:00", "response_tokens": 7020, "sample_id": 359}
+{"event": "weight_publish", "learner_updates": 44, "published_version": 45, "recorded_at": "2026-09-06T08:07:49.891941+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:09:08.698797+00:00", "rollout_id": 44, "sample_ids": [345, 347, 360, 355, 354, 357, 362, 356], "wait_seconds": 78.79929695999999}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:09:08.753682+00:00", "rollout_id": 44}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:10:18.446561+00:00", "rollout_id": 44, "seconds": 69.68855643499955}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:10:20.158754+00:00", "response_tokens": 10890, "sample_id": 363}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:10:20.173766+00:00", "response_tokens": 358, "sample_id": 369}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:10:20.218877+00:00", "response_tokens": 7100, "sample_id": 368}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:10:20.222286+00:00", "response_tokens": 8753, "sample_id": 366}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:10:20.225027+00:00", "response_tokens": 7884, "sample_id": 367}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:10:20.229401+00:00", "response_tokens": 10550, "sample_id": 364}
+{"event": "weight_publish", "learner_updates": 45, "published_version": 46, "recorded_at": "2026-09-06T08:10:26.608798+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:12:37.857354+00:00", "rollout_id": 45, "sample_ids": [358, 365, 363, 359, 361, 364, 367, 370], "wait_seconds": 131.24297028799992}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:12:37.909440+00:00", "rollout_id": 45}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:13:50.760086+00:00", "rollout_id": 45, "seconds": 72.84838986799969}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:13:52.140218+00:00", "response_tokens": 3691, "sample_id": 376}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:13:52.153254+00:00", "response_tokens": 3559, "sample_id": 377}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:13:52.163282+00:00", "response_tokens": 784, "sample_id": 379}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:13:52.167318+00:00", "response_tokens": 3390, "sample_id": 378}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:13:52.193512+00:00", "response_tokens": 15438, "sample_id": 374}
+{"event": "weight_publish", "learner_updates": 46, "published_version": 47, "recorded_at": "2026-09-06T08:13:57.507543+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:14:23.004359+00:00", "rollout_id": 46, "sample_ids": [366, 368, 373, 369, 375, 374, 371, 372], "wait_seconds": 25.490941193000253}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:14:23.061667+00:00", "rollout_id": 46}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:15:35.025219+00:00", "rollout_id": 46, "seconds": 71.96097827199992}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:15:36.786581+00:00", "response_tokens": 14297, "sample_id": 376}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:15:36.808630+00:00", "response_tokens": 14165, "sample_id": 377}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:15:36.829453+00:00", "response_tokens": 13996, "sample_id": 378}
+{"event": "rollout_interrupted", "interruption": 2, "recorded_at": "2026-09-06T08:15:36.864930+00:00", "response_tokens": 11390, "sample_id": 379}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:15:36.888709+00:00", "response_tokens": 7803, "sample_id": 382}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:15:36.890993+00:00", "response_tokens": 7501, "sample_id": 383}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:15:36.895103+00:00", "response_tokens": 9656, "sample_id": 381}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:15:36.901056+00:00", "response_tokens": 9914, "sample_id": 380}
+{"event": "weight_publish", "learner_updates": 47, "published_version": 48, "recorded_at": "2026-09-06T08:15:43.727553+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:18:18.474533+00:00", "rollout_id": 47, "sample_ids": [379, 377, 381, 376, 378, 388, 380, 382], "wait_seconds": 154.73961623500054}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:18:18.528722+00:00", "rollout_id": 47}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:19:29.653845+00:00", "rollout_id": 47, "seconds": 71.121537463001}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:19:31.469025+00:00", "response_tokens": 11714, "sample_id": 389}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:19:31.483323+00:00", "response_tokens": 1404, "sample_id": 394}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:19:31.519803+00:00", "response_tokens": 8192, "sample_id": 391}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:19:31.522273+00:00", "response_tokens": 7940, "sample_id": 392}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:19:31.525218+00:00", "response_tokens": 9187, "sample_id": 390}
+{"event": "weight_publish", "learner_updates": 48, "published_version": 49, "recorded_at": "2026-09-06T08:19:38.077331+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:20:19.290036+00:00", "rollout_id": 48, "sample_ids": [383, 384, 387, 393, 385, 386, 397, 389], "wait_seconds": 41.20448909900006}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:20:19.340219+00:00", "rollout_id": 48}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:21:22.064131+00:00", "rollout_id": 48, "seconds": 62.72213725999973}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:21:23.735443+00:00", "response_tokens": 11010, "sample_id": 396}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:21:24.328258+00:00", "response_tokens": 7509, "sample_id": 398}
+{"event": "rollout_interrupted", "interruption": 1, "recorded_at": "2026-09-06T08:21:24.345079+00:00", "response_tokens": 7257, "sample_id": 399}
+{"event": "weight_publish", "learner_updates": 49, "published_version": 50, "recorded_at": "2026-09-06T08:21:30.093997+00:00"}
+{"event": "stream_batch", "ready": 0, "recorded_at": "2026-09-06T08:23:48.696688+00:00", "rollout_id": 49, "sample_ids": [394, 392, 390, 391, 396, 399, 395, 398], "wait_seconds": 138.59579650100022}
+{"event": "rollout_batch_complete", "recorded_at": "2026-09-06T08:23:48.750733+00:00", "rollout_id": 49}
+{"actor_trained": true, "event": "learner_step", "recorded_at": "2026-09-06T08:25:05.360773+00:00", "rollout_id": 49, "seconds": 76.60666455300088}
+{"event": "weight_publish", "learner_updates": 50, "published_version": 51, "recorded_at": "2026-09-06T08:25:12.248293+00:00"}
+{"event": "checkpoint", "force_sync": true, "processed_examples": 400, "recorded_at": "2026-09-06T08:29:23.105057+00:00", "rollout_id": 49}
+{"event": "evaluation", "processed_examples": 400, "recorded_at": "2026-09-06T08:50:03.044971+00:00", "rollout_id": 49}

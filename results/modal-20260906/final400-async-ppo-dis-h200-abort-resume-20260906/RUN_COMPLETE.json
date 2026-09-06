@@ -1,0 +1,69 @@
+{
+  "arm": "async_ppo_dis",
+  "artifact_root": "/vol/artifacts/final400-async-ppo-dis-h200-abort-resume-20260906",
+  "data_sha256": {
+    "fate-m": "6d0d605a0154ba5e63566a3cfc1627754044cec2bcdfc43b79e5c5d61fe876a2",
+    "gaokao-formal": "75ab9062d9ee5888159991e2067ece6b1e422532d34da457dc349069178fd0a6",
+    "train": "ef131480ed911a93ed524245f17f9def3c41c649c1e2da3541db8ee2377165f7"
+  },
+  "finished_at": "2026-09-06T08:24:11.798164+00:00",
+  "hardware": {
+    "cuda_device_count": 2,
+    "gpus": [
+      "0, NVIDIA H200, 143771, GPU-a9579c9b-5456-a492-f559-e5091a562e9c",
+      "1, NVIDIA H200, 143771, GPU-7686f365-4bbd-b56c-77c1-417590f3690f"
+    ],
+    "requested": "H200:2",
+    "roles": {
+      "actor": [
+        0
+      ],
+      "critic": [
+        0
+      ],
+      "rollout": [
+        1
+      ]
+    }
+  },
+  "mode": "final",
+  "passes_per_dataset": 1,
+  "processed_examples": 400,
+  "resumed_after_rollout": null,
+  "run_name": "final400-async-ppo-dis-h200-abort-resume-20260906",
+  "started_at": "2026-09-06T06:01:21.576416+00:00",
+  "status": "complete",
+  "training_examples": 400,
+  "verified_artifacts": {
+    "actor_checkpoint": "/vol/artifacts/final400-async-ppo-dis-h200-abort-resume-20260906/checkpoints/actor",
+    "best_checkpoint": {
+      "hf_export": "/vol/artifacts/final400-async-ppo-dis-h200-abort-resume-20260906/hf-49",
+      "pass_at_1": 0.025,
+      "processed_examples": 400,
+      "rollout_id": 49
+    },
+    "checkpoint_events": 2,
+    "critic_checkpoint": "/vol/artifacts/final400-async-ppo-dis-h200-abort-resume-20260906/checkpoints/critic",
+    "evaluation_events": 2,
+    "evaluation_records": 2,
+    "events": 399,
+    "final_evaluation": {
+      "datasets": {
+        "fate-m": {
+          "examples": 150,
+          "pass_at_1": 0.04
+        },
+        "gaokao-formal": {
+          "examples": 495,
+          "pass_at_1": 0.020202020202020204
+        }
+      },
+      "event": "evaluation",
+      "processed_examples": 400,
+      "recorded_at": "2026-09-06T08:24:04.850752+00:00",
+      "rollout_id": 49
+    },
+    "hf_export": "/vol/artifacts/final400-async-ppo-dis-h200-abort-resume-20260906/hf-49",
+    "scalar_windows": 40
+  }
+}

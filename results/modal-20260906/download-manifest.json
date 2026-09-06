@@ -1,0 +1,278 @@
+[
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/RUN_COMPLETE.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/RUN_COMPLETE.json",
+    "bytes": 2147,
+    "sha256": "512e62edcb41ebed265b52faae49e21642533fbf49b2963d9e21bd4b80d9b8c8"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/gpu-utilization.csv",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/gpu-utilization.csv",
+    "bytes": 1229179,
+    "sha256": "6c6e281fffabb1c24c785491a14aa4f8fcae8c3c7461c076e108c284a7ca54bf"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/final-evaluation.jsonl",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/final-evaluation.jsonl",
+    "bytes": 253,
+    "sha256": "491084b009afecfba868e8cb67c895dcbfe5d038718fc403f7019eab7b9e3400"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/command-final-eval.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/command-final-eval.json",
+    "bytes": 4843,
+    "sha256": "bc4e400ac56569e00cc1399bd674ba85a1855c2e7de139a61543f5ae8d5864af"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/best-checkpoint.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/best-checkpoint.json",
+    "bytes": 158,
+    "sha256": "4d70202351c17efa06b62fccea0c249b993906687ea9e53197b222d4fe77aea0"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/commits/rollout_49.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/commits/rollout_49.json",
+    "bytes": 46,
+    "sha256": "b6b903be0be32b55067fa2a2ed41c8cabf415cb6c40eb3a8edd817bd1f87f97e"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/events.jsonl",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/events.jsonl",
+    "bytes": 61416,
+    "sha256": "42672139ed9de9371cd7352399f6944be2815066f1d0504de1a9ab16d67cfcec"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/evaluations.jsonl",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/evaluations.jsonl",
+    "bytes": 472,
+    "sha256": "5342e09ae65430e2942cd2b4099952833d072fe209aaa66800bacbd83c09f33e"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/snapshots/tracking_state_49.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/snapshots/tracking_state_49.json",
+    "bytes": 37,
+    "sha256": "35dc1b875eb0411bc549b2365b7b8b8cffa62c58360e159778905f0f36a419a7"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/policy-versions.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/policy-versions.json",
+    "bytes": 492,
+    "sha256": "9fec9549afe0cad40a9a8324abde80a2decd651c14a348b5d44b1b41b696abbe"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/state.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/state.json",
+    "bytes": 37,
+    "sha256": "35dc1b875eb0411bc549b2365b7b8b8cffa62c58360e159778905f0f36a419a7"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/metrics.jsonl",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/metrics.jsonl",
+    "bytes": 18052,
+    "sha256": "1cb7660bcd146f9adb56f8f82ec01c4c114b5f496607df7e9b14dc5aa809f67a"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/commits/rollout_24.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/commits/rollout_24.json",
+    "bytes": 46,
+    "sha256": "e8d5f7c33a7f96c5f63d459e6cb047160bd684026d633aff70dc254f3f8d15f3"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/snapshots/tracking_state_24.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/tracking/snapshots/tracking_state_24.json",
+    "bytes": 37,
+    "sha256": "6381df4a5dd44b0e900764c4d938599366c72a06998961fc09a89009248940a8"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/selection-prompts/gaokao-formal.jsonl",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/selection-prompts/gaokao-formal.jsonl",
+    "bytes": 172096,
+    "sha256": "a376472dd288253b4168464f876ea632896406467948173d3b38e0a45abe7aef"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/selection-prompts/fate-m.jsonl",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/selection-prompts/fate-m.jsonl",
+    "bytes": 102014,
+    "sha256": "ee03ace2ede9d3c45f4cd4bd4a373bd252012a5ba84b290e9ae793396cc36271"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/roles.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/roles.json",
+    "bytes": 685,
+    "sha256": "359ca043d18e767f719da4bf39688c5b32219e4bbe6d64d7bc81eb5e62e77625"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/data-report.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/data-report.json",
+    "bytes": 1177,
+    "sha256": "2c17364fc914185bf1ee8ac9366e110e9c1185d54694eb71d914970466f078cb"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/command-attempt-001.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/command-attempt-001.json",
+    "bytes": 4919,
+    "sha256": "cc67e13826c294f5cdf7bbcfcff39884369b5be111d570016dd2ee4fe64a947f"
+  },
+  {
+    "remote_path": "final400-async-ppo-h200-abort-resume-20260906/run-contract.json",
+    "local_path": "final400-async-ppo-h200-abort-resume-20260906/run-contract.json",
+    "bytes": 2721,
+    "sha256": "90c029e9e5dae0cdc61ca820cab228e9769b5e4f7b41501bbc56b977dd313914"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/RUN_COMPLETE.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/RUN_COMPLETE.json",
+    "bytes": 2176,
+    "sha256": "62457e464d7693c297f81f4d4e3100c756b7f598276c34c42827d55085f54a56"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/gpu-utilization.csv",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/gpu-utilization.csv",
+    "bytes": 771509,
+    "sha256": "1253769a9795a3c08671be1f2f849c0ca20fa87a0ace7f32d698bd5766dbf631"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/final-evaluation.jsonl",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/final-evaluation.jsonl",
+    "bytes": 253,
+    "sha256": "2c92bc2c077cf2db08d10a9d3afb323c41a646595c03df371951ed8b25fa1691"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/command-final-eval.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/command-final-eval.json",
+    "bytes": 4921,
+    "sha256": "d72c39e5ebe5058c206b4d9e49838afbc6624c82619bcabc1ff457d72438cc33"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/best-checkpoint.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/best-checkpoint.json",
+    "bytes": 163,
+    "sha256": "ff507580c3ae21573a69ba13f0c7de0d6793199b3ad4b54e8e6ba090bb7b50de"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/commits/rollout_49.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/commits/rollout_49.json",
+    "bytes": 46,
+    "sha256": "b6b903be0be32b55067fa2a2ed41c8cabf415cb6c40eb3a8edd817bd1f87f97e"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/events.jsonl",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/events.jsonl",
+    "bytes": 57798,
+    "sha256": "91784f13b011c2f178c54017efe30154f0937e791caa26a41fcbe641ee602d85"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/evaluations.jsonl",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/evaluations.jsonl",
+    "bytes": 473,
+    "sha256": "feade0e35c978deb8dd7b427e90e08d50a7170ad08d8b7004f305e09cb952778"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/snapshots/tracking_state_49.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/snapshots/tracking_state_49.json",
+    "bytes": 37,
+    "sha256": "35dc1b875eb0411bc549b2365b7b8b8cffa62c58360e159778905f0f36a419a7"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/policy-versions.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/policy-versions.json",
+    "bytes": 492,
+    "sha256": "9fec9549afe0cad40a9a8324abde80a2decd651c14a348b5d44b1b41b696abbe"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/state.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/state.json",
+    "bytes": 37,
+    "sha256": "35dc1b875eb0411bc549b2365b7b8b8cffa62c58360e159778905f0f36a419a7"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/metrics.jsonl",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/metrics.jsonl",
+    "bytes": 18071,
+    "sha256": "d9bdb3a2280ec7c6631ca3a071c9f24103bce533850ad4442d25047c4cd9bc6b"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/commits/rollout_24.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/commits/rollout_24.json",
+    "bytes": 46,
+    "sha256": "e8d5f7c33a7f96c5f63d459e6cb047160bd684026d633aff70dc254f3f8d15f3"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/snapshots/tracking_state_24.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/tracking/snapshots/tracking_state_24.json",
+    "bytes": 37,
+    "sha256": "6381df4a5dd44b0e900764c4d938599366c72a06998961fc09a89009248940a8"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/selection-prompts/gaokao-formal.jsonl",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/selection-prompts/gaokao-formal.jsonl",
+    "bytes": 172096,
+    "sha256": "a376472dd288253b4168464f876ea632896406467948173d3b38e0a45abe7aef"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/selection-prompts/fate-m.jsonl",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/selection-prompts/fate-m.jsonl",
+    "bytes": 102014,
+    "sha256": "ee03ace2ede9d3c45f4cd4bd4a373bd252012a5ba84b290e9ae793396cc36271"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/roles.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/roles.json",
+    "bytes": 693,
+    "sha256": "30770c56e30ba6b2661e532be792b485f1ce9702a2547c4c3fd12437c77b9752"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/data-report.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/data-report.json",
+    "bytes": 1177,
+    "sha256": "2c17364fc914185bf1ee8ac9366e110e9c1185d54694eb71d914970466f078cb"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/command-attempt-001.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/command-attempt-001.json",
+    "bytes": 5001,
+    "sha256": "6f58a503d38d266d7d4b83aa332378fe730b0b8163df4db0d5365d3e806d383b"
+  },
+  {
+    "remote_path": "final400-async-ppo-dis-h200-abort-resume-20260906/run-contract.json",
+    "local_path": "final400-async-ppo-dis-h200-abort-resume-20260906/run-contract.json",
+    "bytes": 2725,
+    "sha256": "173ff4fa98284ffb9075983d9ae156350538599574d909658801dc8e139d3044"
+  },
+  {
+    "remote_path": "base-qwen35-4b-full645-eval16-v5-20260905/RUN_COMPLETE.json",
+    "local_path": "base-qwen35-4b-full645-eval16-v5-20260905/RUN_COMPLETE.json",
+    "bytes": 1381,
+    "sha256": "6405fb3aedd0a7c4f500b6ee78022df0723c11fdc68ce312f297b00c1fb7db11"
+  },
+  {
+    "remote_path": "base-qwen35-4b-full645-eval16-v5-20260905/gpu-utilization.csv",
+    "local_path": "base-qwen35-4b-full645-eval16-v5-20260905/gpu-utilization.csv",
+    "bytes": 180759,
+    "sha256": "5169e6f996573f2373318f331ca34cd3582ec19c54bfd2043717f9731d0e1fed"
+  },
+  {
+    "remote_path": "base-qwen35-4b-full645-eval16-v5-20260905/final-evaluation.jsonl",
+    "local_path": "base-qwen35-4b-full645-eval16-v5-20260905/final-evaluation.jsonl",
+    "bytes": 251,
+    "sha256": "944fecc224305d387d2957c408a056d780498e8ef836e92edb5be2938c68b907"
+  },
+  {
+    "remote_path": "base-qwen35-4b-full645-eval16-v5-20260905/roles.json",
+    "local_path": "base-qwen35-4b-full645-eval16-v5-20260905/roles.json",
+    "bytes": 667,
+    "sha256": "77ed0c639e1783ffef2b3c89d973e9aa824c29481010c401edca8302ac9aeb1e"
+  },
+  {
+    "remote_path": "base-qwen35-4b-full645-eval16-v5-20260905/command-final-eval.json",
+    "local_path": "base-qwen35-4b-full645-eval16-v5-20260905/command-final-eval.json",
+    "bytes": 4885,
+    "sha256": "571b2e2e846aabc23917241266f9628e4d4cd825d147203412e53bad97322303"
+  },
+  {
+    "remote_path": "base-qwen35-4b-full645-eval16-v5-20260905/run-contract.json",
+    "local_path": "base-qwen35-4b-full645-eval16-v5-20260905/run-contract.json",
+    "bytes": 2722,
+    "sha256": "54bd1ef0aeef5ec52a3abfe64011d785b4e469d03080c4f3a05ed38f419f8fa9"
+  }
+]

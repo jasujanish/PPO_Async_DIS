@@ -1,0 +1,127 @@
+{
+  "runs": [
+    {
+      "model": "Base",
+      "run": "base-qwen35-4b-full645-eval16-v5-20260905",
+      "verified": {
+        "fate-m": 6,
+        "gaokao-formal": 6
+      },
+      "total_verified": 12,
+      "total_problems": 645,
+      "pass_at_1": 0.018604651162790697,
+      "reported_runtime_minutes": 65.3493741,
+      "gpu_count": 1
+    },
+    {
+      "model": "Async PPO",
+      "run": "final400-async-ppo-h200-abort-resume-20260906",
+      "verified": {
+        "fate-m": 3,
+        "gaokao-formal": 5
+      },
+      "total_verified": 8,
+      "total_problems": 645,
+      "pass_at_1": 0.012403100775193798,
+      "reported_runtime_minutes": 231.8038996666667,
+      "gpu_count": 2,
+      "selected_checkpoint_examples": 200,
+      "training_updates": 50,
+      "training_verified": 63,
+      "mean_response_tokens": 8206.7475,
+      "learner_minutes": 62.38463468706671,
+      "selection_evaluations": [
+        {
+          "datasets": {
+            "fate-m": {
+              "examples": 100,
+              "pass_at_1": 0.01
+            },
+            "gaokao-formal": {
+              "examples": 100,
+              "pass_at_1": 0.01
+            }
+          },
+          "event": "evaluation",
+          "processed_examples": 200,
+          "recorded_at": "2026-09-06T07:31:43.215009+00:00",
+          "rollout_id": 24
+        },
+        {
+          "datasets": {
+            "fate-m": {
+              "examples": 100,
+              "pass_at_1": 0.0
+            },
+            "gaokao-formal": {
+              "examples": 100,
+              "pass_at_1": 0.0
+            }
+          },
+          "event": "evaluation",
+          "processed_examples": 400,
+          "recorded_at": "2026-09-06T08:50:02.873342+00:00",
+          "rollout_id": 49
+        }
+      ]
+    },
+    {
+      "model": "Async PPO + DIS",
+      "run": "final400-async-ppo-dis-h200-abort-resume-20260906",
+      "verified": {
+        "fate-m": 6,
+        "gaokao-formal": 10
+      },
+      "total_verified": 16,
+      "total_problems": 645,
+      "pass_at_1": 0.024806201550387597,
+      "reported_runtime_minutes": 142.83702913333335,
+      "gpu_count": 2,
+      "selected_checkpoint_examples": 400,
+      "training_updates": 50,
+      "training_verified": 69,
+      "mean_response_tokens": 4270.7625,
+      "learner_minutes": 48.25021595351666,
+      "selection_evaluations": [
+        {
+          "datasets": {
+            "fate-m": {
+              "examples": 100,
+              "pass_at_1": 0.0
+            },
+            "gaokao-formal": {
+              "examples": 100,
+              "pass_at_1": 0.04
+            }
+          },
+          "event": "evaluation",
+          "processed_examples": 200,
+          "recorded_at": "2026-09-06T06:59:53.301450+00:00",
+          "rollout_id": 24
+        },
+        {
+          "datasets": {
+            "fate-m": {
+              "examples": 100,
+              "pass_at_1": 0.02
+            },
+            "gaokao-formal": {
+              "examples": 100,
+              "pass_at_1": 0.03
+            }
+          },
+          "event": "evaluation",
+          "processed_examples": 400,
+          "recorded_at": "2026-09-06T07:38:26.250343+00:00",
+          "rollout_id": 49
+        }
+      ]
+    }
+  ],
+  "matching_data_sha256": {
+    "fate-m": "6d0d605a0154ba5e63566a3cfc1627754044cec2bcdfc43b79e5c5d61fe876a2",
+    "gaokao-formal": "75ab9062d9ee5888159991e2067ece6b1e422532d34da457dc349069178fd0a6",
+    "train": "ef131480ed911a93ed524245f17f9def3c41c649c1e2da3541db8ee2377165f7"
+  },
+  "downloaded_files": 46
+}

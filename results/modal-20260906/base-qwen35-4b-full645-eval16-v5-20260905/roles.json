@@ -1,0 +1,23 @@
+{
+  "megatron": [
+    {
+      "name": "ppo-async-actor",
+      "overrides": {
+        "load": "/vol/model-cache/torch-dist/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "lr": 3e-07,
+        "save": "/vol/artifacts/base-qwen35-4b-full645-eval16-v5-20260905/unused-actor"
+      },
+      "role": "actor"
+    },
+    {
+      "name": "ppo-async-critic",
+      "overrides": {
+        "disable_param_buffers_cpu_backup": false,
+        "load": "/vol/model-cache/torch-dist/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "lr": 3e-06,
+        "save": "/vol/artifacts/base-qwen35-4b-full645-eval16-v5-20260905/unused-critic"
+      },
+      "role": "critic"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"datasets": {"fate-m": {"examples": 150, "pass_at_1": 0.04}, "gaokao-formal": {"examples": 495, "pass_at_1": 0.012121212121212121}}, "event": "evaluation", "processed_examples": 0, "recorded_at": "2026-09-06T03:21:44.537045+00:00", "rollout_id": -1}

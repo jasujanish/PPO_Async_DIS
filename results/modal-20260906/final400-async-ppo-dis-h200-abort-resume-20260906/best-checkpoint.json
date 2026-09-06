@@ -1,0 +1,6 @@
+{
+  "rollout_id": 49,
+  "processed_examples": 400,
+  "pass_at_1": 0.025,
+  "hf_export": "/vol/artifacts/final400-async-ppo-dis-h200-abort-resume-20260906/hf-49"
+}
