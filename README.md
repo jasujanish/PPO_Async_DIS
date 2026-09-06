@@ -6,18 +6,13 @@ Proximal Policy Optimization (PPO) is a policy gradient method that uses a learn
 
 For a generated token $`a_t`$, let $`s_t`$ be the theorem context and preceding tokens. PPO updates the current policy $`\pi_\theta`$ using the rollout generated with the older policy $`\pi_{\mathrm{old}}`$ using the following objective:
 
-```math
-r_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\mathrm{old}}(a_t \mid s_t)} \tag{1}
-```
+$r_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\mathrm{old}}(a_t \mid s_t)}$
 
-```math
-L_t^{\mathrm{clip}}(\theta)
+$L_t^{\mathrm{clip}}(\theta)
 = \min\left[
     r_t(\theta)\hat{A}_t,\;
     \operatorname{clip}\!\left(r_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t
-  \right]
-\tag{2}
-```
+  \right]$
 
 ## Async PPO Background
 
@@ -29,31 +24,28 @@ Direct Double-Sided Importance Sampling (DIS), introduced in [Single-Rollout Asy
 
 Let $`\pi_{\mathrm{rollout}}`$ be the policy generating the rollout, and $`\pi_{\mathrm{b}}`$ be the policy we are currently trying to optimize. The mask (defined by parameters $`\epsilon_\ell, \epsilon_h`$) is:
 
-```math
+$
 \rho_t
 = \frac{\pi_{\mathrm{b}}(a_t \mid s_t)}{\pi_{\mathrm{rollout}}(a_t \mid s_t)}
 = \exp\!\left(
     \log\pi_{\mathrm{b}}(a_t \mid s_t)
     - \log\pi_{\mathrm{rollout}}(a_t \mid s_t)
   \right)
-\tag{3}
-```
+$
 
-```math
+$
 f_t(x; \epsilon_\ell, \epsilon_h)
 = \begin{cases}
     1, & \text{if } 1-\epsilon_{\ell} < x < 1+\epsilon_h, \\
     0, & \text{otherwise}.
   \end{cases}
-\tag{4}
-```
+$
 
-```math
+$
 J_{\mathrm{PPO+DIS}}(\theta)
 = \frac{1}{T}\sum_{t=1}^{T}
     f_t(L_t^{\mathrm{clip}}(\theta); \epsilon_\ell, \epsilon_h)
-\tag{5}
-```
+$
 
 
 ## Goal
