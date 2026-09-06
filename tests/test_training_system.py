@@ -252,7 +252,7 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
         prompt_data=Path("/data/train-final.jsonl"),
         role_config=Path("/tmp/roles.json"),
         artifact_root=Path("/artifacts/final"),
-        num_rollouts=75,
+        num_rollouts=50,
         config=config,
         production=True,
         eval_paths={
@@ -263,7 +263,7 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
     )
     assert command[command.index("--rollout-batch-size") + 1] == "8"
     assert command[command.index("--global-batch-size") + 1] == "8"
-    assert command[command.index("--processed-example-budget") + 1] == "600"
+    assert command[command.index("--processed-example-budget") + 1] == "400"
     assert command[command.index("--scalar-log-every-examples") + 1] == "10"
     assert command[command.index("--checkpoint-every-examples") + 1] == "200"
     assert command[command.index("--evaluation-every-examples") + 1] == "200"
@@ -272,7 +272,7 @@ def test_production_launcher_uses_exact_data_cadences_and_bounded_async() -> Non
     assert "--eval-prompt-data" in command
     assert "ppo_async.training.evaluation.generate_rollout" in command
     assert "slime.rollout.fully_async_rollout.generate_rollout_fully_async" not in command
-    assert command[command.index("--save-interval") + 1] == "76"
+    assert command[command.index("--save-interval") + 1] == "51"
     assert "--ci-test" not in command
     assert "--no-save-optim" not in command
 

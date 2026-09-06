@@ -26,12 +26,12 @@ headroom must be checked on the target runtime, not inferred from CPU tests.
 
 ## Data contract
 
-The final curriculum contains 600 unique problems, each visited once with
-a freshly generated proof (600 total training attempts):
+The final curriculum contains 400 unique problems, each visited once with
+a freshly generated proof (400 total training attempts):
 
-- the first 300 retained `internlm/Lean-Workbook` rows, after requiring
+- the first 200 retained `internlm/Lean-Workbook` rows, after requiring
   `status == "proved"`;
-- the first 300 retained `marcusm117/ProofNet-Verified` rows.
+- the first 200 retained `marcusm117/ProofNet-Verified` rows.
 
 Evaluation uses only:
 
@@ -69,13 +69,13 @@ uv run prepare-ppo-data \
 The smoke curriculum contains eight Lean-Workbook and eight ProofNet-Verified
 problems. The command refuses limits of 100 or more.
 
-Prepare the immutable 600-example final curriculum and both complete
+Prepare the immutable 400-example final curriculum and both complete
 evaluation suites:
 
 ```bash
 uv run prepare-ppo-data \
   --mode final \
-  --output-root prepared_data/balanced-600-v3
+  --output-root prepared_data/balanced-400-v4
 ```
 
 `data-report.json` records content hashes, source counts, exclusions, and the
@@ -121,7 +121,7 @@ bounds unconsumed work to eight queued proofs plus eight worker-held proofs.
 There is no next-batch prefetch barrier in the driver.
 
 Actor weights are published after every update using SLIME's native SGLang
-pause/retract/transfer/resume path. Requests can span weight versions; actual
+pause/drain/transfer/resume path. Requests can span weight versions; actual
 rollout token log probabilities remain the behavior-policy denominator. SGLang
 returns a final version label rather than a version for every token, so request
 submission age is logged explicitly as a **conservative upper bound** and checked
@@ -132,8 +132,8 @@ skipping data or consuming unlimited compute.
 Checkpoints save the source cursor together with original prompts for every
 outstanding attempt, including completed but unconsumed proofs. On retry those
 attempts are regenerated; already committed training examples are not replayed.
-The producer never reserves more than the 600 logical attempts. Completion
-order is intentionally nondeterministic, while the two-pass prompt multiset is
+The producer never reserves more than the 400 logical attempts. Completion
+order is intentionally nondeterministic, while the one-pass prompt multiset is
 preserved. Generation continues during checkpoints and evaluation, subject to
 queue backpressure. Smoke uses exactly this production scheduler.
 
@@ -202,9 +202,9 @@ response caps remain 16,384 tokens. Production settings are unchanged.
 
 ## Full final runs
 
-All final arms use rollout batch 8 and global learner batch 8 for exactly 75
-updates (600 processed examples, one pass). Scalar rollout metrics use exact
-10-example windows. Checkpoints and HF exports are saved at 200, 400, and 600
+All final arms use rollout batch 8 and global learner batch 8 for exactly 50
+updates (400 processed examples, one pass). Scalar rollout metrics use exact
+10-example windows. Checkpoints and HF exports are saved at 200 and 400
 processed examples, followed by pass@1 evaluation on the same fixed 200 problems
 (100 Gaokao-Formal and 100 FATE-M, selected by seeded statement hash).
 
@@ -220,7 +220,7 @@ so concurrent async training/eval requests can queue at the server.
 Every recovery boundary contains actor, critic, optimizer, dataset cursor (plus
 async outstanding prompts), selection scores, and an HF export. The transaction
 is committed only after the checkpoint and selection evaluation both succeed.
-Only the newest resumable training state is retained; all three HF exports remain
+Only the newest resumable training state is retained; both HF exports remain
 available for selection. Results are recorded in `evaluations.jsonl`,
 `best-checkpoint.json`, and `final-evaluation.jsonl`. Retries resume from the last
 complete transaction without counting a failed partial tail twice.
@@ -235,7 +235,7 @@ runs a CPU-only parse preflight for all pinned SLIME/Megatron commands:
 uv run modal deploy modal_train.py
 uv run python launch_final.py \
   --arm all \
-  --run-prefix balanced600-1pass-qwen35-4b-h200-b8-v4
+  --run-prefix balanced400-1pass-qwen35-4b-h200-b8-v5
 ```
 
 The arm name is appended to each artifact directory. A single arm can also be
@@ -278,3 +278,16 @@ worker-init hook, with loss recomputation enabled. This avoids retaining a
 full-sequence softmax alongside the logits at 16k response length. The OOM
 regression preserves log-probabilities and gradients; GPU smoke jobs provide
 the remaining peak-memory validation.
+
+Base-model pass@1 uses the same inference and verifier path as final evaluation:
+`modal run --detach modal_train.py --mode base-eval --run-name <fresh-name>`.
+It evaluates all 645 benchmark problems once on the pinned base model with one
+H200, concurrency 16, and the same sampling settings and 16,384-token cap.
+The launcher's default selected arms are async PPO and async PPO + DIS.
+
+The image explicitly selects SGLang's abort-and-drain pause for weight updates.
+This gates new admissions and empties the scheduler before cache flushing.
+The completion stream resumes interrupted proofs through SLIME, preserving their
+partial tokens, behavior log probabilities, original submission age, and total
+16,384-token budget. Retract mode cannot be used here: its queued requests prevent
+cache flushing while generation is paused.

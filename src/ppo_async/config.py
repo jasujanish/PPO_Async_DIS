@@ -91,12 +91,12 @@ def validate_experiment(config: dict[str, Any]) -> None:
 
     production = config.get("production", {})
     expected_production = {
-        "prepared_data_version": "balanced-600-v3",
-        "lean_workbook_examples": 300,
-        "proofnet_verified_examples": 300,
+        "prepared_data_version": "balanced-400-v4",
+        "lean_workbook_examples": 200,
+        "proofnet_verified_examples": 200,
         "passes_per_dataset": 1,
-        "processed_example_budget": 600,
-        "num_rollouts": 75,
+        "processed_example_budget": 400,
+        "num_rollouts": 50,
         "scalar_log_every_examples": 10,
         "checkpoint_every_examples": 200,
         "evaluation_every_examples": 200,

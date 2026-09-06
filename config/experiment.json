@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "ppo-async-qwen35-4b-balanced600-1pass-v4-h200",
+  "experiment_id": "ppo-async-qwen35-4b-balanced400-1pass-v5-h200",
   "model": {
     "id": "Qwen/Qwen3.5-4B",
     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
@@ -93,12 +93,12 @@
     "selection_problems_per_dataset": 100
   },
   "production": {
-    "prepared_data_version": "balanced-600-v3",
-    "lean_workbook_examples": 300,
-    "proofnet_verified_examples": 300,
+    "prepared_data_version": "balanced-400-v4",
+    "lean_workbook_examples": 200,
+    "proofnet_verified_examples": 200,
     "passes_per_dataset": 1,
-    "processed_example_budget": 600,
-    "num_rollouts": 75,
+    "processed_example_budget": 400,
+    "num_rollouts": 50,
     "scalar_log_every_examples": 10,
     "checkpoint_every_examples": 200,
     "evaluation_every_examples": 200,

@@ -66,6 +66,7 @@ image = (
         "cd /lean-projects/v428 && lake env lean Smoke.lean",
     )
     .add_local_dir(PROJECT_ROOT / "src", remote_path=REMOTE_ROOT / "src", copy=True)
+    .run_commands(f"PYTHONPATH={REMOTE_ROOT / 'src'} python3 -m ppo_async.training.runtime_patch")
     .add_local_dir(PROJECT_ROOT / "config", remote_path=REMOTE_ROOT / "config", copy=True)
     .add_local_dir(PROJECT_ROOT / "data", remote_path=REMOTE_ROOT / "data", copy=True)
     .add_local_dir(
@@ -528,6 +529,53 @@ def _run_final_evaluation(command, run_root: Path, arm: str, environment: dict[s
         artifact_volume.commit()
 
 
+def _run_base_evaluation(run_name: str) -> dict[str, Any]:
+    """Evaluate the pinned base model with the same final-evaluation path."""
+    from ppo_async.training.launcher import build_train_command, write_role_config
+
+    run_root = Path("/vol/artifacts") / _safe_run_name(run_name)
+    prepared = _prepared_production_data()
+    _ensure_run_contract(run_root, "base_model", prepared["report"])
+    completion = run_root / "RUN_COMPLETE.json"
+    if completion.is_file():
+        return json.loads(completion.read_text())
+    hardware = _hardware_inventory("sync_ppo")
+    hf_checkpoint = _download_model()
+    converted = Path("/vol/model-cache/torch-dist") / MODEL_REVISION
+    roles = run_root / "roles.json"
+    write_role_config(roles, initial_checkpoint=converted,
+                      actor_save=run_root / "unused-actor", critic_save=run_root / "unused-critic",
+                      actor_lr=EXPERIMENT["ppo"]["actor_learning_rate"],
+                      critic_lr=EXPERIMENT["ppo"]["critic_learning_rate"])
+    command = build_train_command(
+        "sync_ppo", hf_checkpoint=hf_checkpoint, torch_dist_checkpoint=converted,
+        prompt_data=prepared["paths"]["train"], role_config=roles, artifact_root=run_root,
+        num_rollouts=EXPERIMENT["production"]["num_rollouts"], config=EXPERIMENT, production=True,
+        eval_paths={name: str(prepared["paths"][name]) for name in ("gaokao-formal", "fate-m")},
+    ) + ["--final-eval-rollout", "-1"]
+    (run_root / "command-final-eval.json").write_text(json.dumps(command, indent=2) + "\n")
+    (run_root / "final-evaluation.jsonl").unlink(missing_ok=True)
+    environment = {
+        **os.environ, "PYTHONPATH": f"/root/Megatron-LM:/root/slime:{REMOTE_ROOT / 'src'}",
+        "CUDA_DEVICE_MAX_CONNECTIONS": "1", "NCCL_NVLS_ENABLE": "1", "PYTHONUNBUFFERED": "1",
+        "PPO_ASYNC_ARM": "sync_ppo", "PPO_ASYNC_BATCH_SIZE": str(EXPERIMENT["rollout"]["batch_size"]),
+    }
+    started = datetime.now(timezone.utc).isoformat()
+    _run_final_evaluation(command, run_root, "sync_ppo", environment)
+    results = _read_jsonl(run_root / "final-evaluation.jsonl")
+    if len(results) != 1 or results[0]["rollout_id"] != -1 or {
+        name: value["examples"] for name, value in results[0]["datasets"].items()
+    } != prepared["report"]["evaluation_rows"]:
+        raise RuntimeError("base evaluation must cover both complete benchmarks exactly once")
+    report = {"status": "complete", "mode": "base-eval", "run_name": run_name,
+              "model": EXPERIMENT["model"], "hardware": hardware, "evaluation": results[0],
+              "data_sha256": prepared["report"]["sha256"], "started_at": started,
+              "finished_at": datetime.now(timezone.utc).isoformat(), "artifact_root": str(run_root)}
+    completion.write_text(json.dumps(report, indent=2) + "\n")
+    artifact_volume.commit()
+    return report
+
+
 def _run_final(
     arm: str,
     run_name: str,
@@ -681,6 +729,7 @@ def _run_final(
                 except subprocess.TimeoutExpired:
                     process.kill()
             subprocess.run(["ray", "stop", "--force"], env=environment, check=False)
+            artifact_volume.commit()
 
     best = best_checkpoint(_read_jsonl(run_root / "evaluations.jsonl"))
     best["hf_export"] = str(run_root / f"hf-{best['rollout_id']}")
@@ -737,6 +786,8 @@ _worker_options = dict(
 
 @app.function(gpu="H200:1", **_worker_options)
 def train_sync(mode, arm, run_name, training_examples=16, num_rollouts=1):
+    if mode == "base-eval":
+        return _run_base_evaluation(run_name)
     if arm != "sync_ppo":
         raise ValueError("one-GPU worker requires sync_ppo")
     if mode in {"final", "integration-smoke"}:
@@ -771,7 +822,8 @@ def main(
         launches = []
         for selected in arms:
             selected_run_name = f"{run_name}-{selected.replace('_', '-')}" if len(arms) > 1 else run_name
-            call = train_final.spawn(selected, selected_run_name)
+            worker = train_sync if selected == "sync_ppo" else train_async
+            call = worker.spawn("final", selected, selected_run_name)
             launches.append(
                 {
                     "arm": selected,
@@ -783,22 +835,21 @@ def main(
             json.dumps(
                 {
                     "status": "launched",
-                    "gpu_concurrency": "one production run at a time; sync=1 H200, async=2 H200",
+                    "gpu_concurrency": "per run: sync=1 H200, async=2 H200",
                     "calls": launches,
                 },
                 indent=2,
             )
         )
+    elif mode == "base-eval":
+        print(json.dumps(train_sync.remote(mode, "sync_ppo", run_name), indent=2))
     elif mode == "integration-smoke":
         worker = train_sync if normalized_arm == "sync_ppo" else train_async
         print(json.dumps(worker.remote(mode, normalized_arm, run_name), indent=2))
     elif mode == "smoke":
-        report = train_smoke.remote(
-            normalized_arm,
-            training_examples,
-            num_rollouts,
-            run_name,
-        )
-        print(json.dumps(report, indent=2))
+        worker = train_sync if normalized_arm == "sync_ppo" else train_async
+        call = worker.spawn("smoke", normalized_arm, run_name, training_examples, num_rollouts)
+        print(json.dumps({"status": "launched", "run_name": run_name,
+                          "function_call_id": call.object_id}, indent=2))
     else:
-        raise ValueError("mode must be 'smoke', 'integration-smoke', or 'final'")
+        raise ValueError("mode must be 'smoke', 'integration-smoke', 'base-eval', or 'final'")

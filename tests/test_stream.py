@@ -174,3 +174,53 @@ def test_retry_limit_prevents_unbounded_wasted_compute(stream):
         group = data.get_samples(1)[0]
     with pytest.raises(RuntimeError, match='three policy-age retries'):
         data.retry(group)
+
+
+def test_publication_resumes_partial_proof_with_one_total_budget(stream, monkeypatch):
+    statuses = SimpleNamespace(ABORTED='abort', COMPLETED='stop', TRUNCATED='length')
+    stream.Sample.Status = statuses
+    events = []
+    driver = ModuleType('ppo_async.training.driver')
+    driver._event = lambda *a, **kw: events.append((a, kw))
+    monkeypatch.setitem(sys.modules, driver.__name__, driver)
+    sample = stream.Sample(7)
+    sample.status, sample.response_length = 'pending', 0
+    sample.tokens, sample.rollout_log_probs = [99], []
+    params = {'max_new_tokens': 6}
+    remaining = []
+    async def generate(args, group, sampling_params, evaluation):
+        # SLIME's continuation contract: existing tokens are the next prompt,
+        # and the old response length is subtracted from a fresh budget.
+        assert group[0] is sample
+        assert sample.tokens == [99] + list(range(sample.response_length))
+        sampling_params['max_new_tokens'] -= sample.response_length
+        remaining.append(sampling_params['max_new_tokens'])
+        start = sample.response_length
+        sample.tokens.extend(range(start, start + 2))
+        sample.rollout_log_probs.extend([-0.1 * (start + 1)] * 2)
+        sample.response_length += 2
+        sample.status = statuses.TRUNCATED if sample.response_length == 6 else statuses.ABORTED
+        return group
+    result = asyncio.run(stream._complete_generation(SimpleNamespace(num_rollout=3), [sample], params, generate))
+    assert result == [sample]
+    assert remaining == [6, 4, 2]
+    assert params == {'max_new_tokens': 6}
+    assert sample.tokens == [99, 0, 1, 2, 3, 4, 5]
+    assert sample.rollout_log_probs == pytest.approx([-.1, -.1, -.3, -.3, -.5, -.5])
+    assert len(events) == 2
+
+
+@pytest.mark.parametrize('failure', ['missing_logprobs', 'over_budget', 'unexpected_status', 'endless_abort'])
+def test_partial_generation_fails_closed(stream, monkeypatch, failure):
+    stream.Sample.Status = SimpleNamespace(ABORTED='abort', COMPLETED='stop', TRUNCATED='length')
+    driver = ModuleType('ppo_async.training.driver')
+    driver._event = lambda *a, **kw: None
+    monkeypatch.setitem(sys.modules, driver.__name__, driver)
+    sample = stream.Sample(0)
+    sample.response_length = 2 if failure == 'over_budget' else 1
+    sample.rollout_log_probs = [] if failure == 'missing_logprobs' else [-.1] * sample.response_length
+    sample.status = 'pending' if failure == 'unexpected_status' else 'abort'
+    async def generate(*a, **kw):
+        return [sample]
+    with pytest.raises(RuntimeError):
+        asyncio.run(stream._complete_generation(SimpleNamespace(num_rollout=2), [sample], {'max_new_tokens': 1}, generate))

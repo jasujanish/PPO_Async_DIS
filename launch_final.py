@@ -28,7 +28,7 @@ def _safe_prefix(value: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-prefix", default="balanced600-1pass-qwen35-4b-h200-b8-v4")
+    parser.add_argument("--run-prefix", default="balanced400-1pass-qwen35-4b-h200-b8-v5")
     parser.add_argument(
         "--arm",
         choices=("selected", "all", "sync-ppo", "async-ppo", "async-ppo-dis"),
@@ -42,7 +42,7 @@ def main() -> None:
     args = parser.parse_args()
     prefix = _safe_prefix(args.run_prefix)
     if args.arm == "selected":
-        selected = ["async_ppo_dis", "sync_ppo"]
+        selected = ["async_ppo", "async_ppo_dis"]
     elif args.arm == "all":
         selected = list(ARMS)
     else:

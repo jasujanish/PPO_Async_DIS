@@ -293,8 +293,8 @@ def train_asynchronous(args: Any) -> None:
             data = ray.get(rollout_manager.generate.remote(rollout_id))
             _event("rollout_batch_complete", rollout_id=rollout_id)
             actor_trains = _train_one(args, rollout_id, data, actor_model, critic_model)
-            # SLIME pauses/retracts active requests for transfer, then resumes
-            # their prefixes. There is no full-trajectory drain or next-batch wait.
+            # SGLang aborts and drains active requests for transfer; the stream
+            # resumes their partial tokens once admissions reopen.
             actor_model.update_weights()
             published_version += 1
             versions[published_version] = learner_updates_before(args, rollout_id + 1)

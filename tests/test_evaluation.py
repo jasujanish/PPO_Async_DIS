@@ -11,7 +11,7 @@ from ppo_async.training.driver import _crosses_interval
 
 
 def test_fixed_selection_is_balanced_repeatable_and_order_independent(tmp_path):
-    root = Path(__file__).resolve().parents[1] / "prepared_data/balanced-600-v3"
+    root = Path(__file__).resolve().parents[1] / "prepared_data/balanced-400-v4"
     paths = {name: root / f"eval-{name}.jsonl" for name in ("gaokao-formal", "fate-m")}
     selected = ev.selection_paths(paths, tmp_path / "first", 100, 42)
     shuffled = {}
@@ -75,11 +75,12 @@ def test_training_and_eval_limits_are_independent_even_when_overlapping():
     asyncio.run(check())
 
 
-def test_active_experiment_has_three_exact_checkpoint_boundaries():
+def test_active_experiment_has_two_exact_checkpoint_boundaries():
     config = load_experiment()
     args = SimpleNamespace(num_rollout=config["production"]["num_rollouts"],
-                           processed_example_budget=600, rollout_batch_size=8, n_samples_per_prompt=1)
-    assert [i for i in range(args.num_rollout) if _crosses_interval(args, i, 200)] == [24, 49, 74]
+                           processed_example_budget=config["production"]["processed_example_budget"],
+                           rollout_batch_size=8, n_samples_per_prompt=1)
+    assert [i for i in range(args.num_rollout) if _crosses_interval(args, i, 200)] == [24, 49]
 
 
 @pytest.mark.parametrize("failure", [False, True])
@@ -213,3 +214,39 @@ def test_final_ray_workers_inherit_final_log_path(tmp_path, monkeypatch, arm, fa
     assert environment["PPO_ASYNC_EVALUATION_LOG"] == str(selection_log)
     assert calls[-1] == ["ray", "stop", "--force"]
     assert commits == [True]
+
+
+def test_base_eval_uses_pinned_model_and_full_suites_without_training(tmp_path, monkeypatch):
+    import modal_train
+    from ppo_async.training.tracking import log_eval_scalars
+
+    real_path = Path
+    monkeypatch.setattr(modal_train, "Path", lambda p: tmp_path if p == "/vol/artifacts" else real_path(p))
+    root = real_path(__file__).resolve().parents[1] / "prepared_data/balanced-400-v4"
+    prepared = {"report": json.loads((root / "data-report.json").read_text()),
+                "paths": {"train": root / "train-final.jsonl", **{
+                    name: root / f"eval-{name}.jsonl" for name in ["gaokao-formal", "fate-m"]}}}
+    monkeypatch.setattr(modal_train, "_prepared_production_data", lambda: prepared)
+    monkeypatch.setattr(modal_train, "_hardware_inventory", lambda arm: {"requested": "H200:1"})
+    monkeypatch.setattr(modal_train, "_download_model", lambda: real_path("/pinned-base"))
+    monkeypatch.setattr(modal_train, "artifact_volume", SimpleNamespace(commit=lambda: None))
+    calls = []
+    def evaluate(command, run_root, arm, env):
+        calls.append(command)
+        assert arm == "sync_ppo"
+        assert command[command.index("--hf-checkpoint") + 1] == "/pinned-base"
+        assert command[-2:] == ["--final-eval-rollout", "-1"]
+        assert command[command.index("--eval-concurrency") + 1] == "16"
+        for name in ["gaokao-formal", "fate-m"]:
+            assert str(prepared["paths"][name]) in command
+        monkeypatch.setenv("PPO_ASYNC_EVALUATION_LOG", str(run_root / "final-evaluation.jsonl"))
+        monkeypatch.setenv("PPO_ASYNC_BATCH_SIZE", "8")
+        log_eval_scalars(-1, SimpleNamespace(), {
+            name: {"rewards": [0.0] * count} for name, count in prepared["report"]["evaluation_rows"].items()
+        }, None)
+    monkeypatch.setattr(modal_train, "_run_final_evaluation", evaluate)
+    result = modal_train._run_base_evaluation("base-test")
+    assert result["status"] == "complete"
+    assert result["evaluation"]["processed_examples"] == 0
+    assert modal_train._run_base_evaluation("base-test") == result
+    assert len(calls) == 1

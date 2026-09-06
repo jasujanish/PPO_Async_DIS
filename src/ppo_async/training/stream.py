@@ -150,6 +150,28 @@ def _accept(args, group, rollout_id):
     return age <= int(os.environ["PPO_ASYNC_MAX_POLICY_LAG"])
 
 
+async def _complete_generation(args, group, sampling_params, generate):
+    # Native SLIME appends response tokens/logprobs and subtracts the existing
+    # response length from a fresh token budget when resuming ABORTED samples.
+    for interruption in range(args.num_rollout + 2):
+        group = await generate(args, group, sampling_params.copy(), evaluation=False)
+        if len(group) != 1:
+            raise RuntimeError("stream generation requires exactly one sample")
+        sample = group[0]
+        if len(sample.rollout_log_probs or []) != sample.response_length:
+            raise RuntimeError("missing behavior log probabilities for generated tokens")
+        if sample.response_length > sampling_params["max_new_tokens"]:
+            raise RuntimeError("resumed generation exceeded the trajectory token budget")
+        if sample.status in (Sample.Status.COMPLETED, Sample.Status.TRUNCATED):
+            return group
+        if sample.status != Sample.Status.ABORTED:
+            raise RuntimeError(f"invalid stream generation status: {sample.status}")
+        from ppo_async.training.driver import _event
+        _event("rollout_interrupted", sample_id=sample.index,
+               response_tokens=sample.response_length, interruption=interruption + 1)
+    raise RuntimeError(f"sample {sample.index} exceeded the weight-publication interruption budget")
+
+
 async def _next_batch(args, rollout_id, source):
     from slime.rollout.sglang_rollout import GenerateState, generate_and_rm_group
 
@@ -159,12 +181,8 @@ async def _next_batch(args, rollout_id, source):
         async def generate(group):
             oldest = _published_updates()
             started = time.monotonic()
-            result = await generate_and_rm_group(args, group, state.sampling_params.copy(), evaluation=False)
-            if len(result) != 1 or result[0].status not in (Sample.Status.COMPLETED, Sample.Status.TRUNCATED):
-                raise RuntimeError("stream generation did not return one completed proof")
+            result = await _complete_generation(args, group, state.sampling_params, generate_and_rm_group)
             sample = result[0]
-            if len(sample.rollout_log_probs or []) != sample.response_length:
-                raise RuntimeError("missing behavior log probabilities for generated tokens")
             sample.metadata = sample.metadata or {}
             sample.metadata.update(behavior_updates_at_submission=oldest,
                                    generation_seconds=time.monotonic() - started)
