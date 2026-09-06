@@ -6,13 +6,13 @@ Proximal Policy Optimization (PPO) is a policy gradient method that uses a learn
 
 For a generated token $`a_t`$, let $`s_t`$ be the theorem context and preceding tokens. PPO updates the current policy $`\pi_\theta`$ using the rollout generated with the older policy $`\pi_{\mathrm{old}}`$ using the following objective:
 
-$r_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\mathrm{old}}(a_t \mid s_t)}$
+$$r_t(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\mathrm{old}}(a_t \mid s_t)}$$
 
-$L_t^{\mathrm{clip}}(\theta)
+$$L_t^{\mathrm{clip}}(\theta)
 = \min\left[
     r_t(\theta)\hat{A}_t,\;
     \text{clip}\!\left(r_t(\theta), 1-\epsilon, 1+\epsilon\right)\hat{A}_t
-  \right]$
+  \right]$$
 
 ## Async PPO Background
 
