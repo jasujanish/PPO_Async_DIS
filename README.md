@@ -24,22 +24,24 @@ Direct Double-Sided Importance Sampling (DIS), introduced in [Single-Rollout Asy
 
 Let $`\pi_{\mathrm{rollout}}`$ be the policy generating the rollout, and $`\pi_{\mathrm{b}}`$ be the policy we are currently trying to optimize. The mask (defined by parameters $`\epsilon_\ell, \epsilon_h`$) is:
 
-$\rho_t
+$$\rho_t
 = \frac{\pi_{\mathrm{b}}(a_t \mid s_t)}{\pi_{\mathrm{rollout}}(a_t \mid s_t)}
 = \exp\!\left(
     \log\pi_{\mathrm{b}}(a_t \mid s_t)
     - \log\pi_{\mathrm{rollout}}(a_t \mid s_t)
-  \right)$
+  \right)$$
 
-$f_t(x; \epsilon_\ell, \epsilon_h)
+$$f_t(x; \epsilon_\ell, \epsilon_h)
 = \begin{cases}
     1, & \text{if } 1-\epsilon_{\ell} < x < 1+\epsilon_h, \\
     0, & \text{otherwise}.
-  \end{cases}$
+  \end{cases}$$
 
-$J_{\mathrm{PPO+DIS}}(\theta)
+The objective is:
+
+$$J_{\mathrm{PPO+DIS}}(\theta)
 = \frac{1}{T}\sum_{t=1}^{T}
-    f_t(L_t^{\mathrm{clip}}(\theta); \epsilon_\ell, \epsilon_h)$
+    f_t(L_t^{\mathrm{clip}}(\theta); \epsilon_\ell, \epsilon_h)$$
 
 
 ## Goal
