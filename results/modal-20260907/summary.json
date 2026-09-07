@@ -1,0 +1,62 @@
+{
+  "model": "Async PPO + DIS Masking",
+  "run": "experiment2-dis-masking-balanced400-h200-v1",
+  "status": "complete",
+  "verified": {
+    "fate-m": 4,
+    "gaokao-formal": 7
+  },
+  "total_verified": 11,
+  "total_problems": 645,
+  "pass_at_1": 0.017054263565891473,
+  "reported_runtime_minutes": 168.59709306666667,
+  "gpu_count": 2,
+  "selected_checkpoint_examples": 400,
+  "training_updates": 50,
+  "training_examples": 400,
+  "training_verified": 42,
+  "mean_response_tokens": 4349.5875,
+  "training_truncated_fraction": 0.13,
+  "learner_minutes": 50.434228878566664,
+  "selection_evaluations": [
+    {
+      "datasets": {
+        "fate-m": {
+          "examples": 100,
+          "pass_at_1": 0.0
+        },
+        "gaokao-formal": {
+          "examples": 100,
+          "pass_at_1": 0.0
+        }
+      },
+      "event": "evaluation",
+      "processed_examples": 200,
+      "recorded_at": "2026-09-07T03:00:11.319860+00:00",
+      "rollout_id": 24
+    },
+    {
+      "datasets": {
+        "fate-m": {
+          "examples": 100,
+          "pass_at_1": 0.0
+        },
+        "gaokao-formal": {
+          "examples": 100,
+          "pass_at_1": 0.02
+        }
+      },
+      "event": "evaluation",
+      "processed_examples": 400,
+      "recorded_at": "2026-09-07T03:41:48.179324+00:00",
+      "rollout_id": 49
+    }
+  ],
+  "data_sha256": {
+    "fate-m": "6d0d605a0154ba5e63566a3cfc1627754044cec2bcdfc43b79e5c5d61fe876a2",
+    "gaokao-formal": "75ab9062d9ee5888159991e2067ece6b1e422532d34da457dc349069178fd0a6",
+    "train": "ef131480ed911a93ed524245f17f9def3c41c649c1e2da3541db8ee2377165f7"
+  },
+  "download_manifest": "download-manifest.json",
+  "remote_app_id": "ap-FuLJI5i06KIX1mFesxG96G"
+}

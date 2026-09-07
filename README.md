@@ -64,7 +64,7 @@ J_0(\theta)
 = \frac{1}{T}\sum_{t=1}^{T}
 \min\left[
     r_t^{(0)}(\theta)\hat{A}_t,\;
-    \operatorname{clip}\left(r_t^{(0)}(\theta),1-\epsilon_{val},1+\epsilon_{val}\right)\hat{A}_t
+    \text{clip}\left(r_t^{(0)}(\theta),1-\epsilon_{val},1+\epsilon_{val}\right)\hat{A}_t
 \right].
 $$
 
@@ -117,7 +117,7 @@ J_1(\theta)
 = \frac{1}{T}\sum_{t=1}^{T}m_t(x_t)
 \min\left[
     r_t^{(1)}(\theta)\hat{A}_t,\;
-    \operatorname{clip}\left(r_t^{(1)}(\theta),1-\epsilon_{val},1+\epsilon_{val}\right)\hat{A}_t
+    \text{clip}\left(r_t^{(1)}(\theta),1-\epsilon_{val},1+\epsilon_{val}\right)\hat{A}_t
 \right].
 ```
 
@@ -125,7 +125,7 @@ The baseline probabilities and mask are fixed during the actor update. Masked to
 
 ### Experiment 2: Async PPO + DIS Masking
 
-**Implemented, not yet run.** This is Run 0 plus a DIS-style binary rejection
+**Completed.** This is Run 0 plus a DIS-style binary rejection
 mask. PPO clipping and masking both use the current actor-to-rollout ratio;
 there is no recomputed baseline policy $`\pi_b`$ in the actor objective.
 
@@ -147,7 +147,7 @@ J_2(\theta)
 = \frac{1}{T}\sum_{t=1}^{T}m_t(r_t^{(2)})
 \min\left[
     r_t^{(2)}(\theta)\hat{A}_t,\;
-    \operatorname{clip}\left(r_t^{(2)}(\theta),1-\epsilon_{val},1+\epsilon_{val}\right)\hat{A}_t
+    \text{clip}\left(r_t^{(2)}(\theta),1-\epsilon_{val},1+\epsilon_{val}\right)\hat{A}_t
 \right].
 ```
 
@@ -161,7 +161,13 @@ actor-to-baseline ratio, this ratio can differ from one before the actor step.
 This hybrid retains PPO clipping in addition to DIS-style rejection; it is
 not the exact DIS objective displayed in SAO. Masking may reduce extreme
 updates but also discards useful signal and does not fully correct off-policy
-bias. No results below belong to Experiment 2.
+bias. Final results for this experiment are included below.
+
+
+## Compute + Scope Note
+- This is a small project done to learn more about LLM post-training
+- I'd be eager to perform complete ablations on this work, but I'm compute constrained (running of free credits)
+- I'd be eager to do a true academic study on improving async post-training for LLMs in the future, but this repo is not a full research project, just a few small experiments
 
 ## Goal
 
@@ -169,7 +175,7 @@ The goal is to investigate whether asynchronous reinforcement learning with DIS 
 
 The RL environment supplies a formal theorem and its Lean context. The model generates a candidate proof of up to **16,384 tokens**. A Lean verifier checks the proof and audits its axiom dependencies: valid proofs receive reward **1**, and rejected proofs receive **0**. Reference proofs are excluded from prompts, and infrastructure errors are treated as failures rather than negative rewards.
 
-We compare the base model, Async PPO, and Async PPO + Baseline-Policy Masking. Each training run processes **400 problems in one pass**, with batch size eight and **50 actor and 50 critic updates**.
+We compare the base model, Async PPO, Async PPO + Baseline-Policy Masking, and Async PPO + DIS Masking. Each training run processes **400 problems in one pass**, with batch size eight and **50 actor and 50 critic updates**.
 
 ## Data
 
@@ -186,23 +192,24 @@ Checkpoints at 200 and 400 training problems are evaluated on the same fixed 200
 
 ## Final results
 
-Both training runs and all final evaluations completed successfully. Final **pass@1** is the fraction of problems solved by one generated, Lean-verified proof:
+All three training runs and their final evaluations completed successfully. Final **pass@1** is the fraction of problems solved by one generated, Lean-verified proof:
 
 | Model | Gaokao-Formal | FATE-M | Overall pass@1 |
 | --- | ---: | ---: | ---: |
 | Base | 6/495 | 6/150 | **12/645 — 1.86%** |
 | Async PPO | 5/495 | 3/150 | **8/645 — 1.24%** |
 | Async PPO + Baseline-Policy Masking | 10/495 | 6/150 | **16/645 — 2.48%** |
+| Async PPO + DIS Masking | 7/495 | 4/150 | **11/645 — 1.71%** |
 
-**Async PPO + Baseline-Policy Masking achieved the highest observed score**, verifying four more proofs than the base model and twice as many as plain Async PPO. Final evaluation used plain PPO's checkpoint after 200 training problems and baseline-policy masking's checkpoint after 400.
+**Async PPO + Baseline-Policy Masking achieved the highest observed score**, verifying four more proofs than the base model and twice as many as plain Async PPO. Final evaluation used plain PPO's checkpoint after 200 training problems and both masking variants' checkpoints after 400.
 
-| Training-run measurement | Async PPO | Async PPO + Baseline-Policy Masking |
-| --- | ---: | ---: |
-| Training problems / actor updates | 400 / 50 | 400 / 50 |
-| Verified training proofs | 63/400 (15.75%) | 69/400 (17.25%) |
-| Mean training response length | 8,207 tokens | 4,271 tokens |
-| Time inside learner updates | 62.4 min | 48.3 min |
-| Total reported runtime, including evaluations | 3h 52m | 2h 23m |
-| H200s allocated per run | 2 | 2 |
+| Training-run measurement | Async PPO | Async PPO + Baseline-Policy Masking | Async PPO + DIS Masking |
+| --- | ---: | ---: | ---: |
+| Training problems / actor updates | 400 / 50 | 400 / 50 | 400 / 50 |
+| Verified training proofs | 63/400 (15.75%) | 69/400 (17.25%) | 42/400 (10.50%) |
+| Mean training response length | 8,207 tokens | 4,271 tokens | 4,350 tokens |
+| Time inside learner updates | 62.4 min | 48.3 min | 50.4 min |
+| Total reported runtime, including evaluations | 3h 52m | 2h 23m | 2h 49m |
+| GPUs allocated per run | 2 | 2 | 2 |
 
 The baseline-policy masking run finished soon as it had substantially shorter training responses. 

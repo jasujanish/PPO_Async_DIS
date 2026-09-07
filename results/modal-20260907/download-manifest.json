@@ -1,0 +1,122 @@
+[
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/RUN_COMPLETE.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/RUN_COMPLETE.json",
+    "bytes": 2162,
+    "sha256": "59d901b3d798417ed82ac47fb65aa3febf36196283216cd542c96ff5e99112fd"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/best-checkpoint.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/best-checkpoint.json",
+    "bytes": 156,
+    "sha256": "975909e20a0b9436f20adfadc2943384c7f5ccec3e293c480969c0c59142bc71"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/command-attempt-001.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/command-attempt-001.json",
+    "bytes": 5027,
+    "sha256": "2f1c41c9a8c3ab0e0691d86ccd6726b1fb540caf4d3e1a30d59ba6bfd2fe3fbc"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/command-final-eval.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/command-final-eval.json",
+    "bytes": 4953,
+    "sha256": "f96d395dd62a239ef38234df7353321e3eae834c43ff8ae110f4132c39a633d5"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/data-report.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/data-report.json",
+    "bytes": 1177,
+    "sha256": "2c17364fc914185bf1ee8ac9366e110e9c1185d54694eb71d914970466f078cb"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/evaluations.jsonl",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/evaluations.jsonl",
+    "bytes": 471,
+    "sha256": "a89ecdcbd76c4feb2d5a3d42bafe210fd2724531a2ac09a89765dae6db7959b2"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/events.jsonl",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/events.jsonl",
+    "bytes": 58819,
+    "sha256": "355ffd083581412ddf3f91ccdfdc23d561ad6224819486d2308fb228016a636b"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/final-evaluation.jsonl",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/final-evaluation.jsonl",
+    "bytes": 268,
+    "sha256": "1bd0457358785f6cc1d70d8705442597d37c77559af95fb00fc97b992f9036d7"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/gpu-utilization.csv",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/gpu-utilization.csv",
+    "bytes": 899707,
+    "sha256": "46933993200c071f2df631862ae35b224ffa51e0ca97efa7efd4144e813919a2"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/metrics.jsonl",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/metrics.jsonl",
+    "bytes": 17956,
+    "sha256": "424a7d7e80c7f2a56da8db7efb482913bf933e093fe58ec7a4dcf77d4bf483cb"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/roles.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/roles.json",
+    "bytes": 681,
+    "sha256": "7ab040ae894d5275044cbd5af989479cb27d49089b40dfa7fd075ad8ad3e6b9b"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/run-contract.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/run-contract.json",
+    "bytes": 2850,
+    "sha256": "a97f24e04b603714ab9ae167de39650dd930fbc24d9dee8b008142da8fbf80cd"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/selection-prompts/fate-m.jsonl",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/selection-prompts/fate-m.jsonl",
+    "bytes": 102014,
+    "sha256": "ee03ace2ede9d3c45f4cd4bd4a373bd252012a5ba84b290e9ae793396cc36271"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/selection-prompts/gaokao-formal.jsonl",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/selection-prompts/gaokao-formal.jsonl",
+    "bytes": 172096,
+    "sha256": "a376472dd288253b4168464f876ea632896406467948173d3b38e0a45abe7aef"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/commits/rollout_24.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/commits/rollout_24.json",
+    "bytes": 46,
+    "sha256": "e8d5f7c33a7f96c5f63d459e6cb047160bd684026d633aff70dc254f3f8d15f3"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/commits/rollout_49.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/commits/rollout_49.json",
+    "bytes": 46,
+    "sha256": "b6b903be0be32b55067fa2a2ed41c8cabf415cb6c40eb3a8edd817bd1f87f97e"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/policy-versions.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/policy-versions.json",
+    "bytes": 492,
+    "sha256": "9fec9549afe0cad40a9a8324abde80a2decd651c14a348b5d44b1b41b696abbe"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/snapshots/tracking_state_24.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/snapshots/tracking_state_24.json",
+    "bytes": 37,
+    "sha256": "6381df4a5dd44b0e900764c4d938599366c72a06998961fc09a89009248940a8"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/snapshots/tracking_state_49.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/snapshots/tracking_state_49.json",
+    "bytes": 37,
+    "sha256": "35dc1b875eb0411bc549b2365b7b8b8cffa62c58360e159778905f0f36a419a7"
+  },
+  {
+    "remote_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/state.json",
+    "local_path": "experiment2-dis-masking-balanced400-h200-v1/tracking/state.json",
+    "bytes": 37,
+    "sha256": "35dc1b875eb0411bc549b2365b7b8b8cffa62c58360e159778905f0f36a419a7"
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "rollout_id": 49,
+  "processed_examples": 400,
+  "pass_at_1": 0.01,
+  "hf_export": "/vol/artifacts/experiment2-dis-masking-balanced400-h200-v1/hf-49"
+}
